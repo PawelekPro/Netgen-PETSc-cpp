@@ -1,0 +1,7 @@
+BasedOnStyle: WebKit
+IndentWidth: 4
+UseTab: Always
+TabWidth: 4
+BreakBeforeBraces: Attach
+ColumnLimit: 80
+Language: Cpp
