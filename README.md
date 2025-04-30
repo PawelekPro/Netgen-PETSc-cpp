@@ -23,7 +23,7 @@ To compile and run this project, the following libraries are required:
     - [Netgen Repository](https://github.com/NGSolve/netgen)
 
 4. **OpenMPI**
-    - Version >= 4.1.3
+    - Version: 4.1.3
     - [OpenMPI Website](https://www.open-mpi.org/)
 
 5. **PETSc**
