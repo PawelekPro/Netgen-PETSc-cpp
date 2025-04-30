@@ -21,6 +21,8 @@ public:
 
     void SaveMeshToFile(const std::string &filePath) const;
 
+    std::shared_ptr<MeshObject> GetMeshObject() const { return _mesh; };
+
 private:
     std::shared_ptr<GeometryObject> _geometry;
 

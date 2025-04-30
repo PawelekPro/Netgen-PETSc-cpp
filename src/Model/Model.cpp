@@ -44,6 +44,6 @@ void Model::SaveMeshToFile(const std::string &filePath) const {
     if (!_mesh) {
         throw std::runtime_error("Error, mesh object was not initialized");
     }
-
+    _mesh->SetGeometry(nullptr); // Note: Without this line netgen crashes in meshclass.cpp:1134
     _mesh->Save(std::filesystem::path(filePath));
 }

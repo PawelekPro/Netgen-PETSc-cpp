@@ -89,13 +89,15 @@ include_directories(
         ${PROJECT_DIR}/src/Geometry
         ${PROJECT_DIR}/src/Mesh
         ${PROJECT_DIR}/src/Model
+        ${PROJECT_DIR}/src/NetgenToDMPlex
 )
 
 
 add_executable(NetgenPETScPlugin NetgenPETScPlugin.cpp)
-#target_compile_options(NetgenPETScPlugin PRIVATE ${PETSC_CFLAGS_OTHER})
+target_compile_options(NetgenPETScPlugin PRIVATE ${PETSC_CFLAGS_OTHER})
 target_link_libraries(NetgenPETScPlugin PRIVATE
         GeometryCore
         MeshCore
         Model
+        NetgenToDMPlex
 )
