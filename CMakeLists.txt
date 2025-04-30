@@ -83,6 +83,7 @@ else ()
 endif ()
 
 add_subdirectory(src)
+add_subdirectory(examples)
 
 include_directories(
         ${PROJECT_DIR}/ThirdParty

@@ -1,5 +1,6 @@
 add_library(NetgenToDMPlex
         NetgenToDMPlex.cpp
+        PETScNavierStokes.cpp
 )
 
 target_link_libraries(NetgenToDMPlex PUBLIC
