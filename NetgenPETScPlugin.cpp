@@ -1,6 +1,7 @@
 #include "Model.hpp"
 #include "MeshAlgorithm.hpp"
 #include "NetgenToDMPlex.hpp"
+#include "FvmMesh.hpp"
 
 #include "argparse/argparse.hpp"
 
@@ -12,10 +13,24 @@
 
 
 int main(const int argc, char *argv[]) {
+	int petscArgc = argc;
+	char **petscArgv = argv;
+	static char help[] =
+			"Three-dimensional unstructured finite-volume implicit flow solver.\n";
+	PetscInitialize(&petscArgc, &petscArgv, nullptr, help);
+
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*                                       *\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*			NetPet-Fvm v1.0			   *\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*                                       *\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+
 	argparse::ArgumentParser program(
-		"NetgenPETScPlugin", "1.0.0 (29.04.2025)");
+		"NetPet-Fvm", "1.0.0 (29.04.2025)");
 	program.add_description(
-		"Plugin for using PETSc library coupled with Netgen facilities");
+		"Plugin for using PETSc library coupled with Netgen facilities and FVM solver.");
 
 	program.add_argument("stepFile")
 			.help("STEP CAD file (.stp .step .STP .STEP)")
@@ -37,7 +52,7 @@ int main(const int argc, char *argv[]) {
 	model.ImportSTEP(stepFile);
 
 	const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
-	meshAlgorithm->maxSize = 10;
+	meshAlgorithm->maxSize = 20;
 	meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
 	meshAlgorithm->quadAllowed = true;
 
@@ -46,23 +61,10 @@ int main(const int argc, char *argv[]) {
 	model.GenerateMesh();
 	model.SaveMeshToFile("meshFile.vol");
 
-	// int petscArgc = argc;
-	// char **petscArgv = argv;
-	// PetscInitialize(&petscArgc, &petscArgv, nullptr, nullptr);
-	// NetgenToDMPlex converter(model.GetMeshObject(), meshAlgorithm);
-	// DM dm;
-	// PetscCall(converter.ConvertToDMPlex(PETSC_COMM_WORLD, &dm));
-	// PetscCall(DMView(dm, PETSC_VIEWER_STDOUT_WORLD));
-	//
-	//
-	// PetscViewer viewer;
-	// PetscViewerVTKOpen(PETSC_COMM_WORLD, "mesh.vtk", FILE_MODE_WRITE, &viewer);
-	// PetscCall(DMView(dm, viewer));
-	// PetscViewerDestroy(&viewer);
-	//
-	// PetscCall(DMDestroy(&dm));
-	// PetscFinalize();
+	FvmMeshContainer fvmMesh(model.GetMeshObject());
 
+
+	PetscFinalize();
 	return EXIT_SUCCESS;
 }
 

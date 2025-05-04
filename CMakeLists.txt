@@ -91,6 +91,7 @@ include_directories(
         ${PROJECT_DIR}/src/Mesh
         ${PROJECT_DIR}/src/Model
         ${PROJECT_DIR}/src/NetgenToDMPlex
+        ${PROJECT_DIR}/src/FVM
 )
 
 
@@ -101,4 +102,5 @@ target_link_libraries(NetgenPETScPlugin PRIVATE
         MeshCore
         Model
         NetgenToDMPlex
+        Fvm
 )
