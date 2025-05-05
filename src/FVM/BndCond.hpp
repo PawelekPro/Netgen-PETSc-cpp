@@ -1,0 +1,27 @@
+#ifndef BOUNDARYCONDITIONS_HPP
+#define BOUNDARYCONDITIONS_HPP
+
+enum class BndCondType {
+    NONE = 0,
+    EMPTY,
+    CYCLIC,
+    PROCESSOR,
+    OPEN,
+    INLET,
+    PRESSUREINLET,
+    OUTLET,
+    ADIABATICWALL,
+    MOVINGWALL,
+    WALL,
+    SLIP,
+    PERMEABLE,
+    CONSTRAINTU,
+    CONSTRAINTV,
+    CONSTRAINTW,
+    CONSTRAINT,
+    PRESSURE,
+    SURFACE,
+    VOLUME
+};
+
+#endif

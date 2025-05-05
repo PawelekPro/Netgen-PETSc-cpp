@@ -1,6 +1,8 @@
 add_library(Fvm
         Globals.hpp
         FvmMesh.cpp
+        GeoCalc.cpp
+        BndCond.cpp
 )
 
 target_link_libraries(Fvm PUBLIC

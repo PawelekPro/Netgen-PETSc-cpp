@@ -2,6 +2,7 @@
 #define FVMMESH_HPP
 
 #include "MeshObject.hpp"
+#include "BndCond.hpp"
 
 #include <vector>
 
@@ -25,21 +26,21 @@ namespace FvmMesh {
 
         ElementType type{};
         int nodesNb = 0;
-        std::vector<int> node;
+        std::vector<int> nodes;
 
-        int element = -1;
+        int owner = -1;
 
-        Vector3 cFace;
-        int pair = -1;
+        Vector3 cVec; //! Centroid
+        int pair = -1; //! Neighbour ID
 
-        Vector3 n;
+        Vector3 nVec; //! Normal vector
+        Vector3 aVec; //! Surface vector (normalVector * Area)
 
-        Vector3 A;
-        double Aj = 0.0;
+        double Aj = 0.0; //! Surface vector length (surface area)
 
-        Vector3 d;
-        double dj = 0.0;
-        double kj = 0.0;
+        Vector3 dVec; //! Owner -> Neighbour vector
+        double dj = 0.0; //! Direction vector length
+        double kj = 0.0; //! Scalar product dot(surfaceVector, directionVector)
 
         Vector3 rpl;
         Vector3 rnl;
@@ -49,7 +50,7 @@ namespace FvmMesh {
         int partition = -1;
 
         int ghost = 0;
-        int bc = 0;
+        BndCondType bc = BndCondType::NONE;
     };
 
     struct Element {
@@ -57,14 +58,14 @@ namespace FvmMesh {
 
         ElementType type{};
 
-        Vector3 normal;
-        Vector3 cElement;
+        Vector3 nVec;
+        Vector3 cVec;
 
         int nodesNb = 0;
-        std::vector<int> node;
+        std::vector<int> nodes; //! Vertices forming this cell
 
         int facesNb = 0;
-        std::vector<int> face;
+        std::vector<int> faces; //! Faces forming this cell
 
         double dp = 0.0;
         double Lp = 0.0;
@@ -76,7 +77,7 @@ namespace FvmMesh {
         int partition = -1;
 
         int process = 0;
-        int bc = 0;
+        BndCondType bc = BndCondType::NONE;
 
         std::vector<double> b;
         std::vector<double> c;
@@ -97,6 +98,8 @@ public:
 
 private:
     void BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject);
+
+    void MeshComputeFaces();
 
 public:
     int nodesNb = 0;
