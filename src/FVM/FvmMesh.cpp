@@ -235,12 +235,6 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         }
     }
     patchesNb = static_cast<int>(patches.size());
-
-    PetscPrintf(
-        PETSC_COMM_WORLD,
-        "FVM mesh created: \nNumber of nodes: %d\nNumber of elements: %d"
-        "\nNumber of faces: %d\nNumber of patches: %d\n",
-        nodesNb, elementsNb, facesNb, patchesNb);
 }
 
 void FvmMeshContainer::ComputeFaces() {
@@ -339,19 +333,62 @@ void FvmMeshContainer::ComputeVolumes() {
 }
 
 void FvmMeshContainer::ComputeMeshProperties() {
+    tetrasNb = 0;
+    hexasNb = 0;
+    prismNb = 0;
     totalVolume = 0.0;
-    for (const auto &el: elements)
+    for (const auto &el: elements) {
         totalVolume += el.Vp;
+
+        switch (el.type) {
+            case ElementType::TETRAHEDRON:
+                ++tetrasNb;
+                break;
+            case ElementType::HEXAHEDRON:
+                ++hexasNb;
+                break;
+            case ElementType::PRISM:
+                ++prismNb;
+            default: continue;
+        }
+    }
+
+    trisNb = 0;
+    quadsNb = 0;
+    for (const auto &face: faces) {
+        switch (face.type) {
+            case ElementType::TRIANGLE:
+                ++trisNb;
+                break;
+            case ElementType::QUADRANGLE:
+                ++quadsNb;
+                break;
+            default: continue;
+        }
+    }
 
     totalArea = 0.0;
     for (const auto &patch: patches) {
         totalArea += patch.Aj;
     }
 
-    PetscPrintf(PETSC_COMM_WORLD, "\nTotal surface area: \t%.3E %s^2\n",
+    PetscPrintf(PETSC_COMM_WORLD, "\nFVM MESH PROPERTIES:\n");
+    PetscPrintf(PETSC_COMM_WORLD, "Total surface area: \t%.3E %s^2\n",
                 totalArea, fvmParameter.ulength.c_str());
     PetscPrintf(PETSC_COMM_WORLD, "Total volume: \t\t\t%.3E %s^3\n",
                 totalVolume, fvmParameter.ulength.c_str());
+    PetscPrintf(PETSC_COMM_WORLD, "Mesh statistics:\n");
+    PetscPrintf(PETSC_COMM_WORLD, "  Nodes: \t\t\t\t%d\n", nodesNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Faces: \t\t\t\t%d\n", facesNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Patches: \t\t\t\t%d\n", patchesNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Elements: \t\t\t%d\n", elementsNb);
+
+    PetscPrintf(PETSC_COMM_WORLD, "Element types:\n");
+    PetscPrintf(PETSC_COMM_WORLD, "  Tetrahedrons: \t\t%d\n", tetrasNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Hexahedrons: \t\t\t%d\n", hexasNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Prisms: \t\t\t\t%d\n", prismNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Triangles: \t\t\t%d\n", trisNb);
+    PetscPrintf(PETSC_COMM_WORLD, "  Quadrangles: \t\t\t%d\n", quadsNb);
 }
 
 void FvmMeshContainer::FreeMemory() {
