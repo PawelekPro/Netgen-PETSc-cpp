@@ -38,6 +38,20 @@ ElementType GetSurfaceElementType(const int nodesNb) {
     }
 }
 
+
+std::vector<int> GetFaceVertices(const netgen::Element2d &elem) {
+    const auto &verts = elem.Vertices();
+
+    switch (elem.GetType()) {
+        case TRIG: return {verts[0], verts[1], verts[2]};
+        case QUAD: return {verts[0], verts[1], verts[2], verts[3]};
+        default:
+            throw std::runtime_error("Unsupported element type for face extraction");
+    }
+
+    throw std::runtime_error("Invalid face index for element type");
+}
+
 std::vector<int> GetFaceVertices(
     const netgen::Element &elem, const int faceIndex) {
     const auto &verts = elem.Vertices();
@@ -102,7 +116,8 @@ std::vector<int> GetFaceVertices(
 
 FvmMeshContainer::FvmMeshContainer(const std::shared_ptr<MeshObject> &meshObject) {
     this->BuildFvmMesh(meshObject);
-    this->MeshComputeFaces();
+    this->ComputeFaces();
+    this->ComputeVolumes();
 }
 
 void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject) {
@@ -118,20 +133,42 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
     }
 
     // ELEMENTS
-    elementsNb = meshObject->GetNE();
-    elements.resize(elementsNb);
+    const bool volumeMesh = meshObject->GetNE() != 0;
 
-    for (int i = 1; i <= elementsNb; ++i) {
-        const auto &elem = meshObject->VolumeElement(i);
-        FvmMesh::Element &fvmElement = elements[i - 1];
+    if (volumeMesh) {
+        // Volume mesh
+        elementsNb = meshObject->GetNE();
+        elements.resize(elementsNb);
 
-        fvmElement.index = i;
-        fvmElement.type = ConvertNetgenElementType(elem.GetType());
-        fvmElement.nodesNb = elem.GetNP();
-        fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
-        fvmElement.facesNb = elem.GetNFaces();
-        fvmElement.faces.resize(fvmElement.facesNb, -1); // will fill later
+        for (int i = 1; i <= elementsNb; ++i) {
+            const auto &elem = meshObject->VolumeElement(i);
+            FvmMesh::Element &fvmElement = elements[i - 1];
+
+            fvmElement.index = i;
+            fvmElement.type = ConvertNetgenElementType(elem.GetType());
+            fvmElement.nodesNb = elem.GetNP();
+            fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
+            fvmElement.facesNb = elem.GetNFaces();
+            fvmElement.faces.resize(fvmElement.facesNb, -1); // will fill later
+        }
+    } else {
+        // Surface mesh
+        elementsNb = meshObject->GetNSE();
+        elements.resize(elementsNb);
+
+        for (int i = 1; i <= elementsNb; ++i) {
+            const auto &elem = meshObject->SurfaceElement(i);
+            FvmMesh::Element &fvmElement = elements[i - 1];
+
+            fvmElement.index = i;
+            fvmElement.type = ConvertNetgenElementType(elem.GetType());
+            fvmElement.nodesNb = elem.GetNP();
+            fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
+            fvmElement.facesNb = 1; // surface elements have only one face
+            fvmElement.faces.resize(fvmElement.facesNb, -1); // will fill later
+        }
     }
+
 
     // FACES
     facesNb = meshObject->GetNSE();
@@ -140,35 +177,53 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
 
     int faceIndex = 0;
     std::map<std::set<int>, int> faceMap; // unique set of nodes -> face index
+    if (volumeMesh) {
+        for (int e = 0; e < elementsNb; ++e) {
+            const auto &elem = meshObject->VolumeElement(e + 1);
+            for (int f = 0; f < elem.GetNFaces(); ++f) {
+                auto faceVerts = GetFaceVertices(elem, f);
+                std::set<int> faceKey(faceVerts.begin(), faceVerts.end());
 
-    for (int e = 0; e < elementsNb; ++e) {
-        const auto &elem = meshObject->VolumeElement(e + 1);
-        for (int f = 0; f < elem.GetNFaces(); ++f) {
-            auto faceVerts = GetFaceVertices(elem, f);
-            std::set<int> faceKey(faceVerts.begin(), faceVerts.end());
+                auto it = faceMap.find(faceKey);
+                if (it == faceMap.end()) {
+                    FvmMesh::Face face;
+                    face.index = faceIndex;
+                    face.nodes.assign(faceVerts.begin(), faceVerts.end());
+                    face.nodesNb = static_cast<int>(face.nodes.size());
+                    face.owner = e;
+                    face.type = GetSurfaceElementType(face.nodesNb);
 
-            auto it = faceMap.find(faceKey);
-            if (it == faceMap.end()) {
-                FvmMesh::Face face;
-                face.index = faceIndex;
-                face.nodes.assign(faceVerts.begin(), faceVerts.end());
-                face.nodesNb = static_cast<int>(face.nodes.size());
-                face.owner = e;
-                face.type = GetSurfaceElementType(face.nodesNb);
+                    faceMap[faceKey] = faceIndex;
 
-                faceMap[faceKey] = faceIndex;
-
-                faces.push_back(face);
-                elements[e].faces[f] = faceIndex;
-                ++faceIndex;
-            } else {
-                // Existing face (shared with another element)
-                const int sharedFaceIndex = it->second;
-                faces[sharedFaceIndex].pair = e;
-                elements[e].faces[f] = sharedFaceIndex;
+                    faces.push_back(face);
+                    elements[e].faces[f] = faceIndex;
+                    ++faceIndex;
+                } else {
+                    // Existing face (shared with another element)
+                    const int sharedFaceIndex = it->second;
+                    faces[sharedFaceIndex].pair = e;
+                    elements[e].faces[f] = sharedFaceIndex;
+                }
             }
         }
+    } else {
+        for (int e = 0; e < facesNb; ++e) {
+            const auto &elem = meshObject->SurfaceElement(e + 1);
+            auto faceVerts = GetFaceVertices(elem);
+
+            FvmMesh::Face face;
+            face.index = faceIndex;
+            face.nodes.assign(faceVerts.begin(), faceVerts.end());
+            face.nodesNb = static_cast<int>(face.nodes.size());
+            face.owner = e;
+            face.type = GetSurfaceElementType(face.nodesNb);
+
+            faces.push_back(face);
+            elements[e].faces[0] = faceIndex; // only one face
+            ++faceIndex;
+        }
     }
+
 
     facesNb = static_cast<int>(faces.size());
 
@@ -188,7 +243,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         nodesNb, elementsNb, facesNb, patchesNb);
 }
 
-void FvmMeshContainer::MeshComputeFaces() {
+void FvmMeshContainer::ComputeFaces() {
     for (auto &face: faces) {
         if (face.type == ElementType::TRIANGLE) {
             const Vector3 &n1 = nodes[face.nodes[0] - 1];
@@ -228,6 +283,68 @@ void FvmMeshContainer::MeshComputeFaces() {
         }
     }
     std::cout << "Sum of patch areas: " << sum << std::endl;
+}
+
+void FvmMeshContainer::ComputeVolumes() {
+    for (auto &element: elements) {
+        element.Vp = 0.0;
+        element.cVec = {0.0, 0.0, 0.0};
+
+        const auto &verts = element.nodes;
+
+        if (element.type == ElementType::TRIANGLE) {
+            const Vector3 &n1 = nodes[verts[0] - 1];
+            const Vector3 &n2 = nodes[verts[1] - 1];
+            const Vector3 &n3 = nodes[verts[2] - 1];
+
+            element.Vp = 0.0;
+            element.cVec = GeoCalcCentroid3(n1, n2, n3);
+        } else if (element.type == ElementType::QUADRANGLE) {
+            const Vector3 &n1 = nodes[verts[0] - 1];
+            const Vector3 &n2 = nodes[verts[1] - 1];
+            const Vector3 &n3 = nodes[verts[2] - 1];
+            const Vector3 &n4 = nodes[verts[3] - 1];
+
+            element.Vp = 0.0;
+            element.cVec = GeoCalcCentroid4(n1, n2, n3, n4);
+        } else if (element.type == ElementType::TETRAHEDRON) {
+            const auto &n1 = nodes[verts[0] - 1];
+            const auto &n2 = nodes[verts[1] - 1];
+            const auto &n3 = nodes[verts[2] - 1];
+            const auto &n4 = nodes[verts[3] - 1];
+
+            element.Vp = GeoCalcTetraVolume(n1, n2, n3, n4);
+            element.cVec = GeoCalcCentroid4(n1, n2, n3, n4);
+        } else if (element.type == ElementType::HEXAHEDRON) {
+            const auto &n1 = nodes[verts[0] - 1];
+            const auto &n2 = nodes[verts[1] - 1];
+            const auto &n3 = nodes[verts[2] - 1];
+            const auto &n4 = nodes[verts[3] - 1];
+            const auto &n5 = nodes[verts[4] - 1];
+            const auto &n6 = nodes[verts[5] - 1];
+            const auto &n7 = nodes[verts[6] - 1];
+            const auto &n8 = nodes[verts[7] - 1];
+
+            element.Vp = GeoCalcHexaVolume(n1, n2, n3, n4, n5, n6, n7, n8);
+            element.cVec = GeoCalcCentroid8(n1, n2, n3, n4, n5, n6, n7, n8);
+        } else if (element.type == ElementType::PRISM) {
+            const auto &n1 = nodes[verts[0] - 1];
+            const auto &n2 = nodes[verts[1] - 1];
+            const auto &n3 = nodes[verts[2] - 1];
+            const auto &n4 = nodes[verts[3] - 1];
+            const auto &n5 = nodes[verts[4] - 1];
+            const auto &n6 = nodes[verts[5] - 1];
+
+            element.Vp = GeoCalcPrismVolume(n1, n2, n3, n4, n5, n6);
+            element.cVec = GeoCalcCentroid6(n1, n2, n3, n4, n5, n6);
+        }
+    }
+
+    double totalVolume = 0.0;
+    for (const auto &el: elements)
+        totalVolume += el.Vp;
+
+    std::cout << "Total mesh volume: " << totalVolume << std::endl;
 }
 
 void FvmMeshContainer::FreeMemory() {

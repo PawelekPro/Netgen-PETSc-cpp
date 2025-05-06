@@ -99,7 +99,9 @@ public:
 private:
     void BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject);
 
-    void MeshComputeFaces();
+    void ComputeFaces();
+
+    void ComputeVolumes();
 
 public:
     int nodesNb = 0;

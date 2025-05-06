@@ -52,7 +52,7 @@ int main(const int argc, char *argv[]) {
 	model.ImportSTEP(stepFile);
 
 	const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
-	meshAlgorithm->maxSize = 2;
+	meshAlgorithm->maxSize = 10;
 	meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
 	meshAlgorithm->quadAllowed = false;
 

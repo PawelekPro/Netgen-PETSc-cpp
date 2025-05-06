@@ -9,7 +9,7 @@ void MeshInfo::PrintSelf() {
 		std::cerr << "MeshInfo::PrintSelf: null mesh" << std::endl;
 	}
 
-	std::cout << "\nMesh Info:" << std::endl;
+	std::cout << "\nNetgen Mesh Info:" << std::endl;
 	std::cout << "Number Of Nodes: " << _mesh->GetNP() << std::endl;
     std::cout << "Number Of Segments: " << _mesh->GetNSeg() << std::endl;
     std::cout << "Number Of Faces: " << _mesh->GetNSE() << std::endl;
