@@ -1,6 +1,7 @@
 add_library(Fvm
         Globals.hpp
         FvmMesh.cpp
+        FvmParam.cpp
         GeoCalc.cpp
         BndCond.cpp
 )

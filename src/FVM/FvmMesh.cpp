@@ -1,5 +1,6 @@
 #include "FvmMesh.hpp"
 #include "GeoCalc.hpp"
+#include "FvmParam.hpp"
 
 #include "petscksp.h"
 
@@ -48,8 +49,6 @@ std::vector<int> GetFaceVertices(const netgen::Element2d &elem) {
         default:
             throw std::runtime_error("Unsupported element type for face extraction");
     }
-
-    throw std::runtime_error("Invalid face index for element type");
 }
 
 std::vector<int> GetFaceVertices(
@@ -118,6 +117,7 @@ FvmMeshContainer::FvmMeshContainer(const std::shared_ptr<MeshObject> &meshObject
     this->BuildFvmMesh(meshObject);
     this->ComputeFaces();
     this->ComputeVolumes();
+    this->ComputeMeshProperties();
 }
 
 void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject) {
@@ -269,7 +269,6 @@ void FvmMeshContainer::ComputeFaces() {
         face.bc = BndCondType::NONE;
     }
 
-    double sum = 0.0;
     for (auto &patch: patches) {
         if (patch.type == ElementType::TRIANGLE) {
             const Vector3 &n1 = nodes[patch.nodes[0] - 1];
@@ -279,10 +278,8 @@ void FvmMeshContainer::ComputeFaces() {
             patch.Aj = GeoCalcTriArea(n1, n2, n3);
             patch.cVec = GeoCalcCentroid3(n1, n2, n3);
             patch.nVec = GeoCalcNormal(n1, n2, n3);
-            sum += patch.Aj;
         }
     }
-    std::cout << "Sum of patch areas: " << sum << std::endl;
 }
 
 void FvmMeshContainer::ComputeVolumes() {
@@ -339,12 +336,22 @@ void FvmMeshContainer::ComputeVolumes() {
             element.cVec = GeoCalcCentroid6(n1, n2, n3, n4, n5, n6);
         }
     }
+}
 
-    double totalVolume = 0.0;
+void FvmMeshContainer::ComputeMeshProperties() {
+    totalVolume = 0.0;
     for (const auto &el: elements)
         totalVolume += el.Vp;
 
-    std::cout << "Total mesh volume: " << totalVolume << std::endl;
+    totalArea = 0.0;
+    for (const auto &patch: patches) {
+        totalArea += patch.Aj;
+    }
+
+    PetscPrintf(PETSC_COMM_WORLD, "\nTotal surface area: \t%.3E %s^2\n",
+                totalArea, fvmParameter.ulength.c_str());
+    PetscPrintf(PETSC_COMM_WORLD, "Total volume: \t\t\t%.3E %s^3\n",
+                totalVolume, fvmParameter.ulength.c_str());
 }
 
 void FvmMeshContainer::FreeMemory() {

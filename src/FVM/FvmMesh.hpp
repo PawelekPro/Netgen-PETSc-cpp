@@ -103,6 +103,8 @@ private:
 
     void ComputeVolumes();
 
+    void ComputeMeshProperties();
+
 public:
     int nodesNb = 0;
     int facesNb = 0;
@@ -116,6 +118,9 @@ public:
     int tetrasNb = 0;
     int hexasNb = 0;
     int prismNb = 0;
+
+    double totalVolume = 0;
+    double totalArea = 0;
 
     std::vector<FvmMesh::Vector3> nodes;
     std::vector<FvmMesh::Face> faces;
