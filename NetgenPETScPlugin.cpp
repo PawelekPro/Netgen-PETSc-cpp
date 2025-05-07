@@ -11,6 +11,8 @@
 #include <petscsys.h>
 #include <petscviewer.h>
 
+#include "Globals.hpp"
+
 
 int main(const int argc, char *argv[]) {
 	int petscArgc = argc;
@@ -61,8 +63,13 @@ int main(const int argc, char *argv[]) {
 	model.GenerateMesh();
 	model.SaveMeshToFile("meshFile.vol");
 
-	FvmMeshContainer fvmMesh(model.GetMeshObject());
 
+	try {
+		FvmMeshContainer fvmMesh(model.GetMeshObject());
+	} catch (const MeshException &ex) {
+		std::cerr << "Caught MeshException: " << ex.what()
+				<< ", code: " << ex.code() << std::endl;
+	}
 
 	PetscFinalize();
 	return EXIT_SUCCESS;

@@ -103,6 +103,20 @@ Vector3 GeoCalcCentroid8(
     return rv;
 }
 
+Vector3 GeoMultScalarVector(const double s, const Vector3 &n1) {
+    Vector3 rv;
+
+    rv.x = s * n1.x;
+    rv.y = s * n1.y;
+    rv.z = s * n1.z;
+
+    return rv;
+}
+
+double GeoDotVectorVector(const Vector3 &n2, const Vector3 &n1) {
+    return n2.x * n1.x + n2.y * n1.y + n2.z * n1.z;
+}
+
 double GeoMagVector(const Vector3 &v1) {
     return sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z);
 }

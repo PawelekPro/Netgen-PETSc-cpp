@@ -29,6 +29,10 @@ Vector3 GeoCalcCentroid8(
     const Vector3 &n4, const Vector3 &n5, const Vector3 &n6,
     const Vector3 &n7, const Vector3 &n8);
 
+Vector3 GeoMultScalarVector(double s, const Vector3 &n1);
+
+double GeoDotVectorVector(const Vector3 &n2, const Vector3 &n1);
+
 double GeoMagVector(const Vector3 &v1);
 
 double GeoCalcTriArea(const Vector3 &n1, const Vector3 &n2, const Vector3 &n3);

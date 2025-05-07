@@ -1,6 +1,7 @@
 #include "FvmMesh.hpp"
 #include "GeoCalc.hpp"
 #include "FvmParam.hpp"
+#include "Globals.hpp"
 
 #include "petscksp.h"
 
@@ -9,22 +10,27 @@ using namespace netgen;
 
 ElementType ConvertNetgenElementType(const int ngElemType) {
     switch (ngElemType) {
-        case SEGMENT: return ElementType::BEAM;
+        case SEGMENT:
         case SEGMENT3: return ElementType::BEAM;
+
         case TRIG: return ElementType::TRIANGLE;
         case QUAD: return ElementType::QUADRANGLE;
         case TRIG6: return ElementType::TRIANGLE;
-        case QUAD6: return ElementType::QUADRANGLE;
+
+        case QUAD6:
         case QUAD8: return ElementType::QUADRANGLE;
-        case TET: return ElementType::TETRAHEDRON;
-        case TET10: return ElementType::TETRAHEDRON;
+
+        case TET:
+        case TET10:
         case PYRAMID: return ElementType::TETRAHEDRON;
-        case PRISM: return ElementType::PRISM;
-        case PRISM12: return ElementType::PRISM;
+
+        case PRISM:
+        case PRISM12:
         case PRISM15: return ElementType::PRISM;
         case PYRAMID13: return ElementType::TETRAHEDRON;
-        case HEX: return ElementType::HEXAHEDRON;
-        case HEX20: return ElementType::HEXAHEDRON;
+
+        case HEX:
+        case HEX20:
         case HEX7: return ElementType::HEXAHEDRON;
         default: return ElementType::UNKNOWN;
     }
@@ -115,8 +121,8 @@ std::vector<int> GetFaceVertices(
 
 FvmMeshContainer::FvmMeshContainer(const std::shared_ptr<MeshObject> &meshObject) {
     this->BuildFvmMesh(meshObject);
-    this->ComputeFaces();
     this->ComputeVolumes();
+    this->ComputeFaces();
     this->ComputeMeshProperties();
 }
 
@@ -137,7 +143,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
 
     if (volumeMesh) {
         // Volume mesh
-        elementsNb = meshObject->GetNE();
+        elementsNb = static_cast<int>(meshObject->GetNE());
         elements.resize(elementsNb);
 
         for (int i = 1; i <= elementsNb; ++i) {
@@ -153,7 +159,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         }
     } else {
         // Surface mesh
-        elementsNb = meshObject->GetNSE();
+        elementsNb = static_cast<int>(meshObject->GetNSE());
         elements.resize(elementsNb);
 
         for (int i = 1; i <= elementsNb; ++i) {
@@ -169,9 +175,8 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         }
     }
 
-
     // FACES
-    facesNb = meshObject->GetNSE();
+    facesNb = static_cast<int>(meshObject->GetNSE());
     faces.clear();
     faces.reserve(facesNb);
 
@@ -251,12 +256,48 @@ void FvmMeshContainer::ComputeFaces() {
             const Vector3 &n1 = nodes[face.nodes[0] - 1];
             const Vector3 &n2 = nodes[face.nodes[1] - 1];
             const Vector3 &n3 = nodes[face.nodes[2] - 1];
-            const Vector3 &n4 = nodes[face.nodes[2] - 1];
+            const Vector3 &n4 = nodes[face.nodes[3] - 1];
 
             face.Aj = GeoCalcQuadArea(n1, n2, n3, n4);
             face.cVec = GeoCalcCentroid4(n1, n2, n3, n4);
             face.nVec = GeoCalcNormal(n1, n2, n3);
         }
+
+        face.aVec = GeoMultScalarVector(face.Aj, face.nVec);
+        face.rpl = GeoSubVectorVector(
+            face.cVec, GeoMultScalarVector(
+                GeoDotVectorVector(
+                    GeoSubVectorVector(face.cVec, elements[face.owner].cVec), face.nVec), face.nVec));
+
+        if (face.pair != -1) {
+            const int neighbour = face.pair;
+
+            Vector3 diff = GeoSubVectorVector(elements[neighbour].cVec, elements[face.owner].cVec);
+            // Normal should point to neighbour - flip normal if necessary
+            if (GeoDotVectorVector(diff, face.nVec) < 0) {
+                face.nVec = GeoMultScalarVector(-1.0, face.nVec);
+            }
+
+            face.rnl = GeoSubVectorVector(
+                face.cVec, GeoMultScalarVector(
+                    GeoDotVectorVector(
+                        GeoSubVectorVector(face.cVec, elements[neighbour].cVec), face.nVec), face.nVec));
+
+            face.dVec = GeoSubVectorVector(face.rnl, face.rpl);
+            face.dj = GeoMagVector(face.dVec);
+            if (face.dj == 0) {
+                PetscPrintf(PETSC_COMM_WORLD, "\nError: Problem with mesh\n");
+                throw MeshException("Invalid mesh (Direction vector length == 0)", LOGICAL_ERROR);
+            }
+        } else {
+            face.dVec = GeoSubVectorVector(face.cVec, face.rpl);
+            face.dj = GeoMagVector(face.dVec);
+            if (face.dj == 0) {
+                PetscPrintf(PETSC_COMM_WORLD, "\nError: Problem with mesh\n");
+                throw MeshException("Invalid mesh (Direction vector length == 0)", LOGICAL_ERROR);
+            }
+        }
+
         face.physReg = -1;
         face.elemReg = -1;
         face.partition = -1;
@@ -329,6 +370,18 @@ void FvmMeshContainer::ComputeVolumes() {
             element.Vp = GeoCalcPrismVolume(n1, n2, n3, n4, n5, n6);
             element.cVec = GeoCalcCentroid6(n1, n2, n3, n4, n5, n6);
         }
+    }
+
+    auto [minIt, maxIt] = std::minmax_element(elements.begin(), elements.end(),
+                                              [](const FvmMesh::Element &a, const FvmMesh::Element &b) {
+                                                  return a.Vp < b.Vp;
+                                              });
+
+    if (minIt != elements.end() && maxIt != elements.end()) {
+        double minVp = minIt->Vp;
+        double maxVp = maxIt->Vp;
+
+        std::cout << "Min Vp: " << minVp << ", Max Vp: " << maxVp << std::endl;
     }
 }
 

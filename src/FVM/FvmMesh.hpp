@@ -28,10 +28,10 @@ namespace FvmMesh {
         int nodesNb = 0;
         std::vector<int> nodes;
 
-        int owner = -1;
+        int owner = -1; //! Self cell ID
 
         Vector3 cVec; //! Centroid
-        int pair = -1; //! Neighbour ID
+        int pair = -1; //! Neighbour cell ID
 
         Vector3 nVec; //! Normal vector
         Vector3 aVec; //! Surface vector (normalVector * Area)
@@ -90,6 +90,11 @@ namespace FvmMesh {
     };
 }
 
+inline std::ostream &operator<<(std::ostream &os, const FvmMesh::Vector3 &v) {
+    os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+    return os;
+}
+
 class FvmMeshContainer {
 public:
     explicit FvmMeshContainer(const std::shared_ptr<MeshObject> &meshObject);
@@ -138,5 +143,6 @@ public:
 
     void FreeMemory();
 };
+
 
 #endif

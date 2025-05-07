@@ -41,4 +41,20 @@ constexpr int LSGN(const T &x) { return (x < 0) ? -1 : 1; }
 inline int verbose = 0;
 inline int pchecks = 0;
 
+class MeshException final : public std::exception {
+    int errorCode_;
+    std::string message_;
+public:
+    MeshException(std::string message, const int code)
+        : errorCode_(code), message_(std::move(message)) {}
+
+    const char* what() const noexcept override {
+        return message_.c_str();
+    }
+
+    int code() const noexcept {
+        return errorCode_;
+    }
+};
+
 #endif
