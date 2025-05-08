@@ -138,9 +138,16 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         nodes.push_back({p(0), p(1), p(2)});
     }
 
+    // PHYSICAL GEOMETRY REGIONS
+    std::map<std::set<int>, int> boundaryFaceRegions;
+    for (int i = 0; i < meshObject->GetNSE(); ++i) {
+        const auto &se = meshObject->SurfaceElement(i + 1);
+        std::set<int> seVerts(se.Vertices().begin(), se.Vertices().end());
+        boundaryFaceRegions[seVerts] = se.GetIndex();
+    }
+
     // ELEMENTS
     const bool volumeMesh = meshObject->GetNE() != 0;
-
     if (volumeMesh) {
         // Volume mesh
         elementsNb = static_cast<int>(meshObject->GetNE());
@@ -155,7 +162,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             fvmElement.nodesNb = elem.GetNP();
             fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
             fvmElement.facesNb = elem.GetNFaces();
-            fvmElement.faces.resize(fvmElement.facesNb, -1); // will fill later
+            fvmElement.faces.resize(fvmElement.facesNb, -1);
         }
     } else {
         // Surface mesh
@@ -171,15 +178,15 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             fvmElement.nodesNb = elem.GetNP();
             fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
             fvmElement.facesNb = 1; // surface elements have only one face
-            fvmElement.faces.resize(fvmElement.facesNb, -1); // will fill later
+            fvmElement.faces.resize(fvmElement.facesNb, -1);
+
+            // Get physical geometry region index
+            fvmElement.phyReg = elem.GetIndex();
         }
     }
 
     // FACES
-    facesNb = static_cast<int>(meshObject->GetNSE());
     faces.clear();
-    faces.reserve(facesNb);
-
     int faceIndex = 0;
     std::map<std::set<int>, int> faceMap; // unique set of nodes -> face index
     if (volumeMesh) {
@@ -200,6 +207,12 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
 
                     faceMap[faceKey] = faceIndex;
 
+                    // Get physical geometry region index
+                    auto bfit = boundaryFaceRegions.find(faceKey);
+                    if (bfit != boundaryFaceRegions.end()) {
+                        face.physReg = bfit->second;
+                    }
+
                     faces.push_back(face);
                     elements[e].faces[f] = faceIndex;
                     ++faceIndex;
@@ -212,7 +225,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             }
         }
     } else {
-        for (int e = 0; e < facesNb; ++e) {
+        for (int e = 0; e < static_cast<int>(meshObject->GetNSE()); ++e) {
             const auto &elem = meshObject->SurfaceElement(e + 1);
             auto faceVerts = GetFaceVertices(elem);
 
@@ -228,7 +241,6 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             ++faceIndex;
         }
     }
-
 
     facesNb = static_cast<int>(faces.size());
 
@@ -298,7 +310,6 @@ void FvmMeshContainer::ComputeFaces() {
             }
         }
 
-        face.physReg = -1;
         face.elemReg = -1;
         face.partition = -1;
         face.bc = BndCondType::NONE;
