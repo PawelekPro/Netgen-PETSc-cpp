@@ -26,6 +26,9 @@
 
 #include <map>
 #include <set>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 
 namespace netgen {
 	NETGENPLUGIN_DLL_HEADER
@@ -175,7 +178,7 @@ void NetgenPluginMesher::SetMeshParameters() {
 
 //----------------------------------------------------------------------------
 void NetgenPluginMesher::PrepareOCCGeometry(
-	netgen::OCCGeometry &occGeom, const TopoDS_Shape &shape) {
+	netgen::OCCGeometry &occGeom, const TopoDS_Shape &shape) const {
 	occGeom.shape = shape;
 	occGeom.changed = 1;
 	occGeom.BuildFMap();
@@ -189,6 +192,23 @@ void NetgenPluginMesher::PrepareOCCGeometry(
 
 	std::cout << "\nShapes found in loaded part:" << std::endl;
 	occGeom.PrintNrShapes();
+
+	// Create default surface regions labels
+	for (int i = 1; i < occGeom.NrFaces() + 1; i++) {
+		std::ostringstream oss;
+		oss << "wall_" << std::setw(3) << std::setfill('0') << i;
+		std::string name = oss.str();
+		_ngMesh->SetPhysicalSurfaceRegionLabel(i, name);
+	}
+
+	// Create default volume regions labels
+	for (int i = 1; i < occGeom.NrSolids() + 1; i++) {
+		std::ostringstream oss;
+		oss << "volume_" << std::setw(3) << std::setfill('0') << i;
+		std::string name = oss.str();
+		_ngMesh->SetPhysicalVolumeRegionLabel(i + occGeom.NrFaces(), name);
+	}
+
 	std::cout << std::endl;
 }
 

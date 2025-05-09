@@ -31,8 +31,8 @@ public:
 
 	static void CancelMeshGeneration();
 
-	static void PrepareOCCGeometry(
-		netgen::OCCGeometry &occGeom, const TopoDS_Shape &shape);
+	void PrepareOCCGeometry(
+		netgen::OCCGeometry &occGeom, const TopoDS_Shape &shape) const;
 
 	static void RestrictLocalSize(
 		netgen::Mesh &ngMesh, const gp_XYZ &p, double size, bool overrideMinH = true);

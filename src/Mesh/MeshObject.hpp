@@ -16,9 +16,26 @@ namespace netgen {
 
 
 class MeshObject : public netgen::Mesh {
-    public:
-		MeshObject();
-		~MeshObject() = default;
+public:
+    MeshObject();
+
+    ~MeshObject() = default;
+
+public:
+    void SetPhysicalSurfaceRegionLabel(int index, const std::string &label);
+
+    std::string GetPhysicalSurfaceRegionLabel(int index) const;
+
+    void SetPhysicalVolumeRegionLabel(int index, const std::string &label);
+
+    std::string GetPhysicalVolumeRegionLabel(int index) const;
+
+    int GetSurfaceRegionsNumber() const { return _physicalSurfaceRegions.size(); }
+    int GetVolumeRegionsNumber() const { return _physicalVolumeRegions.size(); }
+
+private:
+    std::map<int, std::string> _physicalSurfaceRegions;
+    std::map<int, std::string> _physicalVolumeRegions;
 };
 
 

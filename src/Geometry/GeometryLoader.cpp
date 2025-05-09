@@ -3,6 +3,10 @@
 #include <XCAFApp_Application.hxx>
 #include <STEPCAFControl_Reader.hxx>
 #include <XCAFDoc_DocumentTool.hxx>
+#include <XCAFDoc_ShapeTool.hxx>
+#include <TDF_ChildIterator.hxx>
+#include <TDataStd_Name.hxx>
+#include <TopExp_Explorer.hxx>
 
 #include <filesystem>
 
@@ -64,6 +68,23 @@ void GeometryLoader::ImportGeometryFromSTEP(const std::string &filename) {
     auto shapeTool = XCAFDoc_DocumentTool::ShapeTool(
         this->_dataFrame->Main());
 
+    // TDF_LabelSequence labels;
+    // shapeTool->GetShapes(labels);
+
+    // for (Standard_Integer i = 1; i <= labels.Length(); ++i) {
+    //     TDF_Label label = labels.Value(i);
+    //
+    //     TopoDS_Shape shape = shapeTool->GetShape(label);
+    //
+    //     Handle(TDataStd_Name) nameAttr;
+    //     if (label.FindAttribute(TDataStd_Name::GetID(), nameAttr)) {
+    //         TCollection_ExtendedString extName = nameAttr->Get();
+    //         std::string name = TCollection_AsciiString(extName).ToCString();
+    //
+    //         std::cout << "Found shape with name: " << name << std::endl;
+    //     }
+    // }
+
     Standard_Integer numberOfShapes = reader.NbShapes();
     if (numberOfShapes == 0) {
         auto message = "No shapes found in given STEP file.";
@@ -79,6 +100,6 @@ void GeometryLoader::ImportGeometryFromSTEP(const std::string &filename) {
     std::filesystem::path filePath(filename);
     std::filesystem::path stepName = filePath.filename();
     auto message = "STEP file: " + stepName.string() + " loaded successfully.";
+    std::cout << message << std::endl;
 }
-
 

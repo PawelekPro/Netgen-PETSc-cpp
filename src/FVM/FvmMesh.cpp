@@ -211,6 +211,9 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
                     auto bfit = boundaryFaceRegions.find(faceKey);
                     if (bfit != boundaryFaceRegions.end()) {
                         face.physReg = bfit->second;
+                    } else {
+                        // volume physical region receives an ID equivalent to the number of surfaces + 1
+                        face.physReg = meshObject->GetNFD() + elem.GetIndex();
                     }
 
                     faces.push_back(face);
