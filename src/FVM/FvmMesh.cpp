@@ -310,8 +310,8 @@ void FvmMeshContainer::ComputeFaces() {
             }
         }
 
-        face.elemReg = -1;
-        face.partition = -1;
+        // face.elemReg = -1;
+        // face.partition = -1;
         face.bc = BndCondType::NONE;
     }
 

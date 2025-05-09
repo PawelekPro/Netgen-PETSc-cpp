@@ -182,6 +182,11 @@ void NetgenPluginMesher::PrepareOCCGeometry(
 	occGeom.BuildVisualizationMesh(0.01);
 	occGeom.CalcBoundingBox();
 
+	// for (int i = 1; i <= occGeom.fmap.Extent(); ++i) {
+	// 	const TopoDS_Shape &shape = occGeom.fmap(i); // or map.FindKey(i);
+	// 	std::cout << occGeom.fmap.FindIndex(shape) << std::endl;
+	// }
+
 	std::cout << "\nShapes found in loaded part:" << std::endl;
 	occGeom.PrintNrShapes();
 	std::cout << std::endl;

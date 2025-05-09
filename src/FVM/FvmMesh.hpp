@@ -46,8 +46,8 @@ namespace FvmMesh {
         Vector3 rnl;
 
         int physReg = -1;
-        int elemReg = -1;
-        int partition = -1;
+        // int elemReg = -1;
+        // int partition = -1;
 
         int ghost = 0;
         BndCondType bc = BndCondType::NONE;
@@ -73,15 +73,15 @@ namespace FvmMesh {
         double Vp = 0.0;
 
         int phyReg = -1;
-        int elemReg = -1;
-        int partition = -1;
+        // int elemReg = -1;
+        // int partition = -1;
 
-        int process = 0;
+        // int process = 0;
         BndCondType bc = BndCondType::NONE;
 
-        std::vector<double> b;
-        std::vector<double> c;
-        std::vector<double> d;
+        // std::vector<double> b;
+        // std::vector<double> c;
+        // std::vector<double> d;
     };
 
     struct Plane {
