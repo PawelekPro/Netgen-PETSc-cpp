@@ -302,14 +302,14 @@ void FvmMeshContainer::ComputeFaces() {
             face.dj = GeoMagVector(face.dVec);
             if (face.dj == 0) {
                 PetscPrintf(PETSC_COMM_WORLD, "\nError: Problem with mesh\n");
-                throw MeshException("Invalid mesh (Direction vector length == 0)", LOGICAL_ERROR);
+                throw FvmException("Invalid mesh (Direction vector length == 0)", LOGICAL_ERROR);
             }
         } else {
             face.dVec = GeoSubVectorVector(face.cVec, face.rpl);
             face.dj = GeoMagVector(face.dVec);
             if (face.dj == 0) {
                 PetscPrintf(PETSC_COMM_WORLD, "\nError: Problem with mesh\n");
-                throw MeshException("Invalid mesh (Direction vector length == 0)", LOGICAL_ERROR);
+                throw FvmException("Invalid mesh (Direction vector length == 0)", LOGICAL_ERROR);
             }
         }
 

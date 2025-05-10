@@ -4,6 +4,11 @@ add_library(Fvm
         FvmParam.cpp
         GeoCalc.cpp
         BndCond.cpp
+        Material.cpp
+)
+
+include_directories(
+        ${THIRD_PARTY_DIR}
 )
 
 target_link_libraries(Fvm PUBLIC

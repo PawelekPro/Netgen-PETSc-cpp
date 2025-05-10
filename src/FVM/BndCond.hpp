@@ -32,9 +32,10 @@ struct BcdVector {
 };
 
 struct BcdSurface {
+    std::string label;
     int physReg;
 
-    int bc;
+    BndCondType bc;
 
     std::string fu, fv, fw;
     std::string fp;
@@ -42,15 +43,7 @@ struct BcdSurface {
     std::string fs;
 };
 
-struct BcdVolume {
-    int physReg;
-
-    int bc;
-
-    std::string fu, fv, fw;
-    std::string fp;
-    std::string fT;
-    std::string fs;
+struct BcdVolume : BcdSurface {
 };
 
 class BoundaryConditions {
@@ -58,7 +51,8 @@ public:
     std::vector<BcdSurface> surfaceRegions;
     std::vector<BcdVolume> volumeRegions;
 
-    bool ConstructBD();
+    void AddBoundaryCondition(const BcdSurface &bcs) { surfaceRegions.push_back(bcs); };
+    void AddBoundaryCondition(const BcdVolume &bcs) { volumeRegions.push_back(bcs); };
 };
 
 #endif

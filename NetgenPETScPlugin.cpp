@@ -59,14 +59,18 @@ int main(const int argc, char *argv[]) {
 	meshAlgorithm->quadAllowed = false;
 
 	model.SetMeshAlgorithm(meshAlgorithm);
-
 	model.GenerateMesh();
+
+	// Decomposing mesh to nProc domains
+	// auto mesh = model.GetMeshObject();
+	// mesh->DecomposeMesh(11);
+
 	model.SaveMeshToFile("meshFile.vol");
 
 
 	try {
 		FvmMeshContainer fvmMesh(model.GetMeshObject());
-	} catch (const MeshException &ex) {
+	} catch (const FvmException &ex) {
 		std::cerr << "Caught MeshException: " << ex.what()
 				<< ", code: " << ex.code() << std::endl;
 	}

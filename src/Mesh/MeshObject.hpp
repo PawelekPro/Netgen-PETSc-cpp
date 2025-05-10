@@ -22,6 +22,8 @@ public:
     ~MeshObject() = default;
 
 public:
+    void DecomposeMesh(const int nProc);
+
     void SetPhysicalSurfaceRegionLabel(int index, const std::string &label);
 
     std::string GetPhysicalSurfaceRegionLabel(int index) const;

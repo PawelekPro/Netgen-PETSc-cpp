@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<materials>
+    <material id="0" name="air">
+        <property label="compressibility">0.0</property>
+        <property label="viscosity">1.8E-5</property>
+        <property label="density">1.225</property>
+        <property label="specificHeat">1005</property>
+        <property label="thermalConductivity">0.025</property>
+        <property label="surfaceTension">0</property>
+        <property label="poissonRatio">0.0</property>
+    </material>
+
+    <material id="1" name="water">
+        <property label="compressibility">0.0</property>
+        <property label="viscosity">1.0E-3</property>
+        <property label="density">998.2</property>
+        <property label="specificHeat">4182</property>
+        <property label="thermalConductivity">0.6</property>
+        <property label="surfaceTension">0.072</property>
+        <property label="poissonRatio">0.499</property>
+    </material>
+
+    <material id="2" name="oil">
+        <property label="compressibility">0.0</property>
+        <property label="viscosity">0.1</property>
+        <property label="density">900</property>
+        <property label="specificHeat">2000</property>
+        <property label="thermalConductivity">0.15</property>
+        <property label="surfaceTension">0.03</property>
+        <property label="poissonRatio">0.49</property>
+    </material>
+</materials>

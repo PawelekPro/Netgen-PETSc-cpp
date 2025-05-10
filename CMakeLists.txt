@@ -4,8 +4,12 @@ project(NetgenPETScPlugin)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-find_package(PkgConfig)
+set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty")
 
+add_compile_definitions(ASSETS_DIR="${ASSETS_DIR}")
+
+find_package(PkgConfig)
 MESSAGE("PROJECT NAME: ${PROJECT_NAME}")
 MESSAGE("PROJECT DIRECTORY: ${PROJECT_DIR}")
 
@@ -86,7 +90,7 @@ add_subdirectory(src)
 add_subdirectory(examples)
 
 include_directories(
-        ${PROJECT_DIR}/ThirdParty
+        ${THIRD_PARTY_DIR}
         ${PROJECT_DIR}/src/Geometry
         ${PROJECT_DIR}/src/Mesh
         ${PROJECT_DIR}/src/Model

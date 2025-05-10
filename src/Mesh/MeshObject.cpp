@@ -1,7 +1,20 @@
 #include "MeshObject.hpp"
 
+#include "NetgenPluginLibWrapper.hpp"
+#include "petscksp.h"
+
 //----------------------------------------------------------------------------
 MeshObject::MeshObject() : netgen::Mesh() {
+}
+
+//----------------------------------------------------------------------------
+void MeshObject::DecomposeMesh(const int nProc) {
+    if (nProc <= 1) {
+        throw std::runtime_error("Error, number of processors must be greater than 1");
+    }
+    PetscPrintf(PETSC_COMM_WORLD, "Decomposing domain to %d partitions\n", nProc);
+    NetgenPluginLibWrapper ngLib;
+    this->ParallelMetis(nProc);
 }
 
 //----------------------------------------------------------------------------
