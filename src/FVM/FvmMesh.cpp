@@ -138,14 +138,6 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         nodes.push_back({p(0), p(1), p(2)});
     }
 
-    // PHYSICAL GEOMETRY REGIONS
-    std::map<std::set<int>, int> boundaryFaceRegions;
-    for (int i = 0; i < meshObject->GetNSE(); ++i) {
-        const auto &se = meshObject->SurfaceElement(i + 1);
-        std::set<int> seVerts(se.Vertices().begin(), se.Vertices().end());
-        boundaryFaceRegions[seVerts] = se.GetIndex();
-    }
-
     // ELEMENTS
     const bool volumeMesh = meshObject->GetNE() != 0;
     if (volumeMesh) {
@@ -183,6 +175,14 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             // Get physical geometry region index
             fvmElement.phyReg = elem.GetIndex();
         }
+    }
+
+    // PHYSICAL GEOMETRY REGIONS
+    std::map<std::set<int>, int> boundaryFaceRegions;
+    for (int i = 0; i < meshObject->GetNSE(); ++i) {
+        const auto &se = meshObject->SurfaceElement(i + 1);
+        std::set<int> seVerts(se.Vertices().begin(), se.Vertices().end());
+        boundaryFaceRegions[seVerts] = se.GetIndex();
     }
 
     // FACES

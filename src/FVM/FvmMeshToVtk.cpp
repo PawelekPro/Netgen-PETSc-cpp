@@ -4,8 +4,8 @@
 #include <vtkMultiBlockDataSet.h>
 #include <vtkInformation.h>
 #include <vtkTetra.h>
-#include <vtkUnstructuredGridWriter.h>
-#include <vtkPolyDataWriter.h>
+#include <vtkXMLMultiBlockDataWriter.h>
+
 
 FvmMeshToVtk::FvmMeshToVtk(const std::shared_ptr<FvmMeshContainer> &fvmMesh)
     : _fvmMesh(fvmMesh) {
@@ -14,71 +14,71 @@ FvmMeshToVtk::FvmMeshToVtk(const std::shared_ptr<FvmMeshContainer> &fvmMesh)
 void FvmMeshToVtk::ConvertFvmMeshToVtk() {
     _vtkMultiBlock = vtkSmartPointer<vtkMultiBlockDataSet>::New();
 
-    // const std::vector<vtkSmartPointer<vtkPolyData> > bndData = ConvertFvmBoundaryMeshToPolyData();
-    // const vtkSmartPointer<vtkUnstructuredGrid> intData = ConvertFvmInternalMeshToVtk();
-    //
-    // const int blocksNb = bndData.size() + 1;
-    // _vtkMultiBlock->SetNumberOfBlocks(blocksNb);
-    // _vtkMultiBlock->SetBlock(0, intData);
-    // _vtkMultiBlock->GetMetaData(static_cast<unsigned int>(0))->Set(
-    //     vtkCompositeDataSet::NAME(), "VolumeMesh");
-    //
-    // int index = 1;
-    // for (const auto pd: bndData) {
-    //     _vtkMultiBlock->SetBlock(index, pd);
-    //     _vtkMultiBlock->GetMetaData(index)->Set(
-    //         vtkCompositeDataSet::NAME(), _fvmMesh->GetBoundaryLabel(index));
-    //     index++;
-    // }
+    const std::vector<vtkSmartPointer<vtkPolyData> > bndData = ConvertFvmBoundaryMeshToPolyData();
+    const vtkSmartPointer<vtkUnstructuredGrid> intData = ConvertFvmInternalMeshToVtk();
+
+    const int blocksNb = bndData.size() + 1;
+    _vtkMultiBlock->SetNumberOfBlocks(blocksNb);
+    _vtkMultiBlock->SetBlock(0, intData);
+    _vtkMultiBlock->GetMetaData(static_cast<unsigned int>(0))->Set(
+        vtkCompositeDataSet::NAME(), "VolumeMesh");
+
+    int index = 1;
+    for (const auto pd: bndData) {
+        _vtkMultiBlock->SetBlock(index, pd);
+        _vtkMultiBlock->GetMetaData(index)->Set(
+            vtkCompositeDataSet::NAME(), _fvmMesh->GetBoundaryLabel(index));
+        index++;
+    }
 }
 
 void FvmMeshToVtk::SaveVtkMeshToFile(const std::string &filename) const {
-    const vtkSmartPointer<vtkUnstructuredGrid> intData = ConvertFvmInternalMeshToVtk();
+    vtkSmartPointer<vtkXMLMultiBlockDataWriter> writer =
+            vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
 
-    auto writer = vtkSmartPointer<vtkUnstructuredGridWriter>::New();
     writer->SetFileName(filename.c_str());
-    writer->SetInputData(intData);
-    writer->SetFileTypeToASCII();
+    writer->SetInputData(_vtkMultiBlock);
+    writer->SetDataModeToAscii();
     writer->Write();
-
-    const std::vector<vtkSmartPointer<vtkPolyData> > bndData = ConvertFvmBoundaryMeshToPolyData();
-    int index = 1;
-    for (const auto pd: bndData) {
-        auto writer = vtkSmartPointer<vtkPolyDataWriter>::New();
-        std::string fileToSave = std::string("bnd") + "_" + std::to_string(index) + ".vtk";
-        writer->SetFileName(fileToSave.c_str());
-        writer->SetInputData(pd);
-        writer->SetFileTypeToASCII();
-        writer->Write();
-        index++;
-    }
 }
 
 std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshToPolyData() const {
     std::vector<vtkSmartPointer<vtkPolyData> > polyDataVec;
 
-    for (int i = 0; i < _fvmMesh->GetSurfacesRegionsNumber(); i++) {
-        const auto polyData = vtkSmartPointer<vtkPolyData>::New();
-        const auto points = vtkSmartPointer<vtkPoints>::New();
+    int patchesNb = _fvmMesh->GetSurfacesRegionsNumber();
+    polyDataVec.resize(patchesNb);
+
+    for (int i = 0; i < patchesNb; ++i) {
+        auto polyData = vtkSmartPointer<vtkPolyData>::New();
+        auto points = vtkSmartPointer<vtkPoints>::New();
         auto polys = vtkSmartPointer<vtkCellArray>::New();
 
-        for (const auto &patch: _fvmMesh->patches) {
-            if (patch.physReg == i) {
-                for (const auto &node: patch.nodes) {
-                    const FvmMesh::Vector3 vec = _fvmMesh->GetNode(node);
-                    points->InsertNextPoint(vec.x, vec.y, vec.z);
-                }
+        std::map<int, vtkIdType> globalToLocal;
 
-                vtkSmartPointer<vtkIdList> ids = vtkSmartPointer<vtkIdList>::New();
-                for (const int nid: patch.nodes)
-                    ids->InsertNextId(nid);
-                polys->InsertNextCell(ids);
+        for (const auto &patch: _fvmMesh->patches) {
+            if (patch.physReg != i + 1)
+                continue;
+
+            auto ids = vtkSmartPointer<vtkIdList>::New();
+
+            for (const int node: patch.nodes) {
+                auto it = globalToLocal.find(node);
+                if (it == globalToLocal.end()) {
+                    const FvmMesh::Vector3 vec = _fvmMesh->GetNode(node - 1);
+                    vtkIdType newId = points->InsertNextPoint(vec.x, vec.y, vec.z);
+                    globalToLocal[node] = newId;
+                    ids->InsertNextId(newId);
+                } else {
+                    ids->InsertNextId(it->second);
+                }
             }
+
+            polys->InsertNextCell(ids);
         }
 
         polyData->SetPoints(points);
         polyData->SetPolys(polys);
-        polyDataVec.push_back(polyData);
+        polyDataVec[i] = polyData;
     }
 
     return polyDataVec;
@@ -87,7 +87,6 @@ std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshT
 vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk() const {
     auto vtkMesh
             = vtkSmartPointer<vtkUnstructuredGrid>::New();
-
 
     const auto points = vtkSmartPointer<vtkPoints>::New();
     for (const auto &v: _fvmMesh->nodes)

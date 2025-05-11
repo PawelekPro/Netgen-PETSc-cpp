@@ -92,6 +92,7 @@ find_package(VTK QUIET REQUIRED COMPONENTS
         vtkCommonCore
         vtkIOGeometry
         vtkIOLegacy
+        vtkIOXML
 )
 
 

@@ -77,8 +77,8 @@ int main(const int argc, char *argv[]) {
 	try {
 		auto fvmMesh = std::make_shared<FvmMeshContainer>(model.GetMeshObject());
 		auto fvmToVtk = FvmMeshToVtk(fvmMesh);
-		// fvmToVtk.ConvertFvmMeshToVtk();
-		fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtk");
+		fvmToVtk.ConvertFvmMeshToVtk();
+		fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");
 	} catch (const FvmException &ex) {
 		std::cerr << "Caught MeshException: " << ex.what()
 				<< ", code: " << ex.code() << std::endl;
