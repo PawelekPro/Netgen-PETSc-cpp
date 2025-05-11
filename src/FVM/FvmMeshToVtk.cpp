@@ -99,13 +99,8 @@ vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk()
         vtkSmartPointer<vtkIdList> ids = vtkSmartPointer<vtkIdList>::New();
 
         for (const int nodeId: elem.nodes) {
-            const auto &pt = _fvmMesh->nodes[nodeId];
-            std::cout << "Node ID " << nodeId << ": (" << pt.x << ", " << pt.y << ", " << pt.z << ")" << std::endl;
-
             ids->InsertNextId(nodeId - 1);
         }
-        std::cout << std::endl;
-
 
         switch (elem.type) {
             case FvmMesh::ElementType::TETRAHEDRON:
