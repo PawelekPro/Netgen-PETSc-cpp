@@ -101,6 +101,14 @@ public:
 
     ~FvmMeshContainer() = default;
 
+    [[nodiscard]] int GetSurfacesRegionsNumber() const;
+
+    [[nodiscard]] int GetVolumesRegionsNumber() const;
+
+    std::string GetBoundaryLabel(const int index) const;
+
+    FvmMesh::Vector3 GetNode(int index) const;
+
 private:
     void BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject);
 
@@ -109,6 +117,10 @@ private:
     void ComputeVolumes();
 
     void ComputeMeshProperties();
+
+private:
+    std::map<int, std::string> _physicalSurfaceRegions;
+    std::map<int, std::string> _physicalVolumeRegions;
 
 public:
     int nodesNb = 0;
@@ -140,8 +152,6 @@ public:
 
     std::vector<int> nodCorrelation;
     std::vector<int> eleCorrelation;
-
-    void FreeMemory();
 };
 
 

@@ -4,7 +4,9 @@ add_library(Fvm
         FvmParam.cpp
         GeoCalc.cpp
         BndCond.cpp
-        Material.cpp
+        FvmMaterial.cpp
+        FvmMeshToVtk.cpp
+        ${THIRD_PARTY_DIR}/tinyxml2/tinyxml2.cpp
 )
 
 include_directories(
@@ -13,6 +15,7 @@ include_directories(
 
 target_link_libraries(Fvm PUBLIC
         ${PETSC_LINK_LIBRARIES}
+        ${VTK_LIBRARIES}
         MPI::MPI_CXX
         MeshCore
 )

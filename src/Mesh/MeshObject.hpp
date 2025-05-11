@@ -22,7 +22,7 @@ public:
     ~MeshObject() = default;
 
 public:
-    void DecomposeMesh(const int nProc);
+    void DecomposeMesh(int nProc);
 
     void SetPhysicalSurfaceRegionLabel(int index, const std::string &label);
 
@@ -32,8 +32,21 @@ public:
 
     std::string GetPhysicalVolumeRegionLabel(int index) const;
 
-    int GetSurfaceRegionsNumber() const { return _physicalSurfaceRegions.size(); }
-    int GetVolumeRegionsNumber() const { return _physicalVolumeRegions.size(); }
+    int GetSurfaceRegionsNumber() const {
+        return static_cast<int>(_physicalSurfaceRegions.size());
+    }
+
+    int GetVolumeRegionsNumber() const {
+        return static_cast<int>(_physicalVolumeRegions.size());
+    }
+
+    std::map<int, std::string> GetSurfaceRegions() {
+        return _physicalSurfaceRegions;
+    }
+
+    std::map<int, std::string> GetVolumeRegions() {
+        return _physicalVolumeRegions;
+    }
 
 private:
     std::map<int, std::string> _physicalSurfaceRegions;

@@ -255,6 +255,9 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
         }
     }
     patchesNb = static_cast<int>(patches.size());
+
+    _physicalSurfaceRegions = meshObject->GetSurfaceRegions();
+    _physicalVolumeRegions = meshObject->GetVolumeRegions();
 }
 
 void FvmMeshContainer::ComputeFaces() {
@@ -458,19 +461,18 @@ void FvmMeshContainer::ComputeMeshProperties() {
     PetscPrintf(PETSC_COMM_WORLD, "  Quadrangles: \t\t\t%d\n", quadsNb);
 }
 
-void FvmMeshContainer::FreeMemory() {
-    nodes.clear();
-    faces.clear();
-    patches.clear();
-    elements.clear();
-    ghosts.clear();
-    nodCorrelation.clear();
-    eleCorrelation.clear();
+int FvmMeshContainer::GetSurfacesRegionsNumber() const {
+    return static_cast<int>(_physicalSurfaceRegions.size());
+}
 
-    nodesNb = facesNb = elementsNb = patchesNb = ghostsNb = 0;
-    outPatchesNb = 0;
-    trisNb = quadsNb = tetrasNb = hexasNb = prismNb = 0;
+int FvmMeshContainer::GetVolumesRegionsNumber() const {
+    return static_cast<int>(_physicalVolumeRegions.size());
+}
 
-    nodCorrelationAllocated = false;
-    eleCorrelationAllocated = false;
+FvmMesh::Vector3 FvmMeshContainer::GetNode(const int index) const {
+    return nodes[index];
+}
+
+std::string FvmMeshContainer::GetBoundaryLabel(const int index) const {
+    return _physicalSurfaceRegions.at(index);
 }

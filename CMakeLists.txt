@@ -86,6 +86,24 @@ else ()
     message(FATAL_ERROR "NETGEN not found!")
 endif ()
 
+# VTK
+find_package(VTK QUIET REQUIRED COMPONENTS
+        vtkIOCore
+        vtkCommonCore
+        vtkIOGeometry
+        vtkIOLegacy
+)
+
+
+if (NOT VTK_FOUND)
+    MESSAGE(FATAL_ERROR "vtk_example: Unable to find the VTK build folder.")
+else ()
+    MESSAGE(STATUS "VTK FOUND")
+    MESSAGE(STATUS "VTK VERSION: ${VTK_VERSION}")
+    MESSAGE(STATUS "VTK_USE_FILE: ${VTK_USE_FILE}")
+    MESSAGE(STATUS "-------------------------------------------------------------------------------")
+endif ()
+
 add_subdirectory(src)
 add_subdirectory(examples)
 

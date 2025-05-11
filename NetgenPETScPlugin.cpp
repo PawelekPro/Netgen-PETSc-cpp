@@ -1,7 +1,8 @@
 #include "Model.hpp"
 #include "MeshAlgorithm.hpp"
-#include "NetgenToDMPlex.hpp"
 #include "FvmMesh.hpp"
+#include "FvmMaterial.hpp"
+#include "FvmMeshToVtk.hpp"
 
 #include "argparse/argparse.hpp"
 
@@ -10,6 +11,7 @@
 #include <petscdm.h>
 #include <petscsys.h>
 #include <petscviewer.h>
+
 
 #include "Globals.hpp"
 
@@ -54,7 +56,7 @@ int main(const int argc, char *argv[]) {
 	model.ImportSTEP(stepFile);
 
 	const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
-	meshAlgorithm->maxSize = 10;
+	meshAlgorithm->maxSize = 2;
 	meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
 	meshAlgorithm->quadAllowed = false;
 
@@ -62,18 +64,31 @@ int main(const int argc, char *argv[]) {
 	model.GenerateMesh();
 
 	// Decomposing mesh to nProc domains
-	// auto mesh = model.GetMeshObject();
+	auto mesh = model.GetMeshObject();
 	// mesh->DecomposeMesh(11);
+
+	// for (int i = 0; i < mesh->GetNE(); ++i) {
+	// 	std::cout << mesh->vol_partition[i] << std::endl;
+	// }
 
 	model.SaveMeshToFile("meshFile.vol");
 
 
 	try {
-		FvmMeshContainer fvmMesh(model.GetMeshObject());
+		auto fvmMesh = std::make_shared<FvmMeshContainer>(model.GetMeshObject());
+		auto fvmToVtk = FvmMeshToVtk(fvmMesh);
+		// fvmToVtk.ConvertFvmMeshToVtk();
+		fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtk");
 	} catch (const FvmException &ex) {
 		std::cerr << "Caught MeshException: " << ex.what()
 				<< ", code: " << ex.code() << std::endl;
 	}
+
+
+	// const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
+	// auto matReg = MaterialsBase(materialsPath);
+	// matReg.PrintSelf();
+
 
 	PetscFinalize();
 	return EXIT_SUCCESS;

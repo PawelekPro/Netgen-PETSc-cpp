@@ -48,11 +48,13 @@ struct BcdVolume : BcdSurface {
 
 class BoundaryConditions {
 public:
+    void RegisterBoundaryCondition(const BcdSurface &bcs);
+
+    void RegisterBoundaryCondition(const BcdVolume &bcs);
+
+private:
     std::vector<BcdSurface> surfaceRegions;
     std::vector<BcdVolume> volumeRegions;
-
-    void AddBoundaryCondition(const BcdSurface &bcs) { surfaceRegions.push_back(bcs); };
-    void AddBoundaryCondition(const BcdVolume &bcs) { volumeRegions.push_back(bcs); };
 };
 
 #endif
