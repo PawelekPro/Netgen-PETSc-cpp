@@ -53,6 +53,9 @@ std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshT
         auto polyData = vtkSmartPointer<vtkPolyData>::New();
         auto points = vtkSmartPointer<vtkPoints>::New();
         auto polys = vtkSmartPointer<vtkCellArray>::New();
+        auto partitionArray = vtkSmartPointer<vtkIntArray>::New();
+        partitionArray->SetName("procId");
+        partitionArray->SetNumberOfComponents(1);
 
         std::map<int, vtkIdType> globalToLocal;
 
@@ -75,10 +78,12 @@ std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshT
             }
 
             polys->InsertNextCell(ids);
+            partitionArray->InsertNextValue(patch.partition);
         }
 
         polyData->SetPoints(points);
         polyData->SetPolys(polys);
+        polyData->GetCellData()->AddArray(partitionArray);
         polyDataVec[i] = polyData;
     }
 
