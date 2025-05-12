@@ -8,10 +8,12 @@
 #include <vtkIntArray.h>
 #include <vtkCellData.h>
 
+//----------------------------------------------------------------------------
 FvmMeshToVtk::FvmMeshToVtk(const std::shared_ptr<FvmMeshContainer> &fvmMesh)
     : _fvmMesh(fvmMesh) {
 }
 
+//----------------------------------------------------------------------------
 void FvmMeshToVtk::ConvertFvmMeshToVtk() {
     _vtkMultiBlock = vtkSmartPointer<vtkMultiBlockDataSet>::New();
 
@@ -33,6 +35,7 @@ void FvmMeshToVtk::ConvertFvmMeshToVtk() {
     }
 }
 
+//----------------------------------------------------------------------------
 void FvmMeshToVtk::SaveVtkMeshToFile(const std::string &filename) const {
     vtkSmartPointer<vtkXMLMultiBlockDataWriter> writer =
             vtkSmartPointer<vtkXMLMultiBlockDataWriter>::New();
@@ -43,19 +46,20 @@ void FvmMeshToVtk::SaveVtkMeshToFile(const std::string &filename) const {
     writer->Write();
 }
 
+//----------------------------------------------------------------------------
 std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshToPolyData() const {
     std::vector<vtkSmartPointer<vtkPolyData> > polyDataVec;
 
-    int patchesNb = _fvmMesh->GetSurfacesRegionsNumber();
+    const int patchesNb = _fvmMesh->GetSurfacesRegionsNumber();
     polyDataVec.resize(patchesNb);
 
     for (int i = 0; i < patchesNb; ++i) {
-        auto polyData = vtkSmartPointer<vtkPolyData>::New();
+        const auto polyData = vtkSmartPointer<vtkPolyData>::New();
         auto points = vtkSmartPointer<vtkPoints>::New();
         auto polys = vtkSmartPointer<vtkCellArray>::New();
-        auto partitionArray = vtkSmartPointer<vtkIntArray>::New();
-        partitionArray->SetName("procId");
-        partitionArray->SetNumberOfComponents(1);
+        auto procIdArray = vtkSmartPointer<vtkIntArray>::New();
+        procIdArray->SetName("procId");
+        procIdArray->SetNumberOfComponents(1);
 
         std::map<int, vtkIdType> globalToLocal;
 
@@ -69,7 +73,7 @@ std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshT
                 auto it = globalToLocal.find(node);
                 if (it == globalToLocal.end()) {
                     const FvmMesh::Vector3 vec = _fvmMesh->GetNode(node - 1);
-                    vtkIdType newId = points->InsertNextPoint(vec.x, vec.y, vec.z);
+                    const vtkIdType newId = points->InsertNextPoint(vec.x, vec.y, vec.z);
                     globalToLocal[node] = newId;
                     ids->InsertNextId(newId);
                 } else {
@@ -78,18 +82,19 @@ std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshT
             }
 
             polys->InsertNextCell(ids);
-            partitionArray->InsertNextValue(patch.partition);
+            procIdArray->InsertNextValue(patch.partition);
         }
 
         polyData->SetPoints(points);
         polyData->SetPolys(polys);
-        polyData->GetCellData()->AddArray(partitionArray);
+        polyData->GetCellData()->AddArray(procIdArray);
         polyDataVec[i] = polyData;
     }
 
     return polyDataVec;
 }
 
+//----------------------------------------------------------------------------
 vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk() const {
     auto vtkMesh
             = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -137,14 +142,14 @@ vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk()
         }
     }
 
-    vtkSmartPointer<vtkIntArray> partitionArray = vtkSmartPointer<vtkIntArray>::New();
-    partitionArray->SetName("procId");
-    partitionArray->SetNumberOfComponents(1);
-    partitionArray->SetNumberOfTuples(_fvmMesh->elementsNb);
+    const auto procIdArray = vtkSmartPointer<vtkIntArray>::New();
+    procIdArray->SetName("procId");
+    procIdArray->SetNumberOfComponents(1);
+    procIdArray->SetNumberOfTuples(_fvmMesh->elementsNb);
     for (int i = 0; i < _fvmMesh->elementsNb; ++i) {
-        partitionArray->SetValue(i, _fvmMesh->elements[i].partition);
+        procIdArray->SetValue(i, _fvmMesh->elements[i].partition);
     }
 
-    vtkMesh->GetCellData()->AddArray(partitionArray);
+    vtkMesh->GetCellData()->AddArray(procIdArray);
     return vtkMesh;
 }
