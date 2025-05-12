@@ -14,7 +14,8 @@ void MeshObject::DecomposeMesh(const int nProc) {
     }
     PetscPrintf(PETSC_COMM_WORLD, "Decomposing domain to %d partitions\n", nProc);
     NetgenPluginLibWrapper ngLib;
-    this->ParallelMetis(nProc);
+    this->ParallelMetis(nProc + 1);
+    this->SetProcNumber(nProc);
 }
 
 //----------------------------------------------------------------------------

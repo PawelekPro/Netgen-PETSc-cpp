@@ -5,7 +5,8 @@
 #include <vtkInformation.h>
 #include <vtkTetra.h>
 #include <vtkXMLMultiBlockDataWriter.h>
-
+#include <vtkIntArray.h>
+#include <vtkCellData.h>
 
 FvmMeshToVtk::FvmMeshToVtk(const std::shared_ptr<FvmMeshContainer> &fvmMesh)
     : _fvmMesh(fvmMesh) {
@@ -93,7 +94,6 @@ vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk()
         points->InsertNextPoint(v.x, v.y, v.z);
 
     vtkMesh->SetPoints(points);
-
     for (const auto &elem: _fvmMesh->elements) {
         vtkSmartPointer<vtkIdList> ids = vtkSmartPointer<vtkIdList>::New();
 
@@ -132,5 +132,14 @@ vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk()
         }
     }
 
+    vtkSmartPointer<vtkIntArray> partitionArray = vtkSmartPointer<vtkIntArray>::New();
+    partitionArray->SetName("procId");
+    partitionArray->SetNumberOfComponents(1);
+    partitionArray->SetNumberOfTuples(_fvmMesh->elementsNb);
+    for (int i = 0; i < _fvmMesh->elementsNb; ++i) {
+        partitionArray->SetValue(i, _fvmMesh->elements[i].partition);
+    }
+
+    vtkMesh->GetCellData()->AddArray(partitionArray);
     return vtkMesh;
 }

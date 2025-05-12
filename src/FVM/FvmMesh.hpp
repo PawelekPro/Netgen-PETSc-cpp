@@ -47,7 +47,7 @@ namespace FvmMesh {
 
         int physReg = -1;
         // int elemReg = -1;
-        // int partition = -1;
+        int partition = -1;
 
         int ghost = 0;
         BndCondType bc = BndCondType::NONE;
@@ -74,7 +74,7 @@ namespace FvmMesh {
 
         int phyReg = -1;
         // int elemReg = -1;
-        // int partition = -1;
+        int partition = -1;
 
         // int process = 0;
         BndCondType bc = BndCondType::NONE;
@@ -109,6 +109,10 @@ public:
 
     FvmMesh::Vector3 GetNode(int index) const;
 
+    void SetProcNumber(const int procNb) { _procNumber = procNb; }
+    int GetProcNumber() const { return _procNumber; }
+    bool IsParallel() const { return _procNumber > 1; };
+
 private:
     void BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject);
 
@@ -119,6 +123,7 @@ private:
     void ComputeMeshProperties();
 
 private:
+    int _procNumber = 1;
     std::map<int, std::string> _physicalSurfaceRegions;
     std::map<int, std::string> _physicalVolumeRegions;
 

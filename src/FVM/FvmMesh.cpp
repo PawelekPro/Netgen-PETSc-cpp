@@ -120,6 +120,8 @@ std::vector<int> GetFaceVertices(
 }
 
 FvmMeshContainer::FvmMeshContainer(const std::shared_ptr<MeshObject> &meshObject) {
+    this->SetProcNumber(meshObject->GetProcNumber());
+
     this->BuildFvmMesh(meshObject);
     this->ComputeVolumes();
     this->ComputeFaces();
@@ -149,12 +151,14 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             const auto &elem = meshObject->VolumeElement(i);
             FvmMesh::Element &fvmElement = elements[i - 1];
 
-            fvmElement.index = i;
+            fvmElement.index = i - 1;
             fvmElement.type = ConvertNetgenElementType(elem.GetType());
             fvmElement.nodesNb = elem.GetNP();
             fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
             fvmElement.facesNb = elem.GetNFaces();
             fvmElement.faces.resize(fvmElement.facesNb, -1);
+            if (IsParallel())
+                fvmElement.partition = meshObject->vol_partition[i - 1];
         }
     } else {
         // Surface mesh
@@ -165,7 +169,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             const auto &elem = meshObject->SurfaceElement(i);
             FvmMesh::Element &fvmElement = elements[i - 1];
 
-            fvmElement.index = i;
+            fvmElement.index = i - 1;
             fvmElement.type = ConvertNetgenElementType(elem.GetType());
             fvmElement.nodesNb = elem.GetNP();
             fvmElement.nodes.assign(elem.Vertices().begin(), elem.Vertices().end());
@@ -174,15 +178,23 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
 
             // Get physical geometry region index
             fvmElement.phyReg = elem.GetIndex();
+            if (IsParallel())
+                fvmElement.partition = meshObject->surf_partition[i];
         }
     }
 
     // PHYSICAL GEOMETRY REGIONS
-    std::map<std::set<int>, int> boundaryFaceRegions;
+    std::map<std::set<int>, std::pair<int, int> > boundaryFaceRegions;
     for (int i = 0; i < meshObject->GetNSE(); ++i) {
         const auto &se = meshObject->SurfaceElement(i + 1);
         std::set<int> seVerts(se.Vertices().begin(), se.Vertices().end());
-        boundaryFaceRegions[seVerts] = se.GetIndex();
+
+        int regionIndex = se.GetIndex();
+        int partitionId = 1; // default partition ID
+        if (IsParallel())
+            partitionId = meshObject->surf_partition[i];
+
+        boundaryFaceRegions[seVerts] = std::make_pair(regionIndex, partitionId);
     }
 
     // FACES
@@ -204,13 +216,13 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
                     face.nodesNb = static_cast<int>(face.nodes.size());
                     face.owner = e;
                     face.type = GetSurfaceElementType(face.nodesNb);
-
                     faceMap[faceKey] = faceIndex;
 
                     // Get physical geometry region index
                     auto bfit = boundaryFaceRegions.find(faceKey);
                     if (bfit != boundaryFaceRegions.end()) {
-                        face.physReg = bfit->second;
+                        face.physReg = bfit->second.first;
+                        face.partition = bfit->second.second;
                     } else {
                         // volume physical region receives an ID equivalent to the number of surfaces + 1
                         face.physReg = meshObject->GetNFD() + elem.GetIndex();
@@ -317,7 +329,6 @@ void FvmMeshContainer::ComputeFaces() {
         }
 
         // face.elemReg = -1;
-        // face.partition = -1;
         face.bc = BndCondType::NONE;
     }
 

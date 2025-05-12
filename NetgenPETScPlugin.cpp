@@ -65,17 +65,13 @@ int main(const int argc, char *argv[]) {
 
 	// Decomposing mesh to nProc domains
 	auto mesh = model.GetMeshObject();
-	// mesh->DecomposeMesh(11);
-
-	// for (int i = 0; i < mesh->GetNE(); ++i) {
-	// 	std::cout << mesh->vol_partition[i] << std::endl;
-	// }
+	mesh->DecomposeMesh(10);
 
 	model.SaveMeshToFile("meshFile.vol");
 
 
 	try {
-		auto fvmMesh = std::make_shared<FvmMeshContainer>(model.GetMeshObject());
+		auto fvmMesh = std::make_shared<FvmMeshContainer>(mesh);
 		auto fvmToVtk = FvmMeshToVtk(fvmMesh);
 		fvmToVtk.ConvertFvmMeshToVtk();
 		fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");

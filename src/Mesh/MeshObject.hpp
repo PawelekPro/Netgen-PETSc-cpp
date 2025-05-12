@@ -48,7 +48,12 @@ public:
         return _physicalVolumeRegions;
     }
 
+    void SetProcNumber(const int procNb) { _procNumber = procNb; }
+    int GetProcNumber() const { return _procNumber; }
+
 private:
+    int _procNumber = 1;
+
     std::map<int, std::string> _physicalSurfaceRegions;
     std::map<int, std::string> _physicalVolumeRegions;
 };
