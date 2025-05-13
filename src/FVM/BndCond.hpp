@@ -48,13 +48,30 @@ struct BcdVolume : BcdSurface {
 
 class BoundaryConditions {
 public:
+    BoundaryConditions();
+
+    static BoundaryConditions &Instance() {
+        static BoundaryConditions instance;
+        return instance;
+    }
+
     void RegisterBoundaryCondition(const BcdSurface &bcs);
 
     void RegisterBoundaryCondition(const BcdVolume &bcs);
 
+    void Clear();
+
 private:
-    std::vector<BcdSurface> surfaceRegions;
-    std::vector<BcdVolume> volumeRegions;
+    std::vector<BcdSurface> _surfaceRegions;
+    std::vector<BcdVolume> _volumeRegions;
+
+    BoundaryConditions(const BoundaryConditions &) = delete;
+
+    BoundaryConditions &operator=(const BoundaryConditions &) = delete;
+
+    BoundaryConditions(BoundaryConditions &&) = delete;
+
+    BoundaryConditions &operator=(BoundaryConditions &&) = delete;
 };
 
 #endif

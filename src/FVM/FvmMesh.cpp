@@ -158,7 +158,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             fvmElement.facesNb = elem.GetNFaces();
             fvmElement.faces.resize(fvmElement.facesNb, -1);
             if (IsParallel())
-                fvmElement.partition = meshObject->vol_partition[i - 1];
+                fvmElement.procId = meshObject->vol_partition[i - 1];
         }
     } else {
         // Surface mesh
@@ -179,7 +179,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             // Get physical geometry region index
             fvmElement.phyReg = elem.GetIndex();
             if (IsParallel())
-                fvmElement.partition = meshObject->surf_partition[i];
+                fvmElement.procId = meshObject->surf_partition[i];
         }
     }
 
@@ -222,7 +222,7 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
                     auto bfit = boundaryFaceRegions.find(faceKey);
                     if (bfit != boundaryFaceRegions.end()) {
                         face.physReg = bfit->second.first;
-                        face.partition = bfit->second.second;
+                        face.procId = bfit->second.second;
                     } else {
                         // volume physical region receives an ID equivalent to the number of surfaces + 1
                         face.physReg = meshObject->GetNFD() + elem.GetIndex();
@@ -266,6 +266,14 @@ void FvmMeshContainer::BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObjec
             patches.push_back(face);
         }
     }
+
+    int maxIndex = elements.front().index;
+    for (auto &patch: patches) {
+        if (patch.index > maxIndex) {
+            patch.bc = BndCondType::PROCESSOR;
+        }
+    }
+
     patchesNb = static_cast<int>(patches.size());
 
     _physicalSurfaceRegions = meshObject->GetSurfaceRegions();

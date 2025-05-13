@@ -82,7 +82,7 @@ std::vector<vtkSmartPointer<vtkPolyData> > FvmMeshToVtk::ConvertFvmBoundaryMeshT
             }
 
             polys->InsertNextCell(ids);
-            procIdArray->InsertNextValue(patch.partition);
+            procIdArray->InsertNextValue(patch.procId);
         }
 
         polyData->SetPoints(points);
@@ -147,7 +147,7 @@ vtkSmartPointer<vtkUnstructuredGrid> FvmMeshToVtk::ConvertFvmInternalMeshToVtk()
     procIdArray->SetNumberOfComponents(1);
     procIdArray->SetNumberOfTuples(_fvmMesh->elementsNb);
     for (int i = 0; i < _fvmMesh->elementsNb; ++i) {
-        procIdArray->SetValue(i, _fvmMesh->elements[i].partition);
+        procIdArray->SetValue(i, _fvmMesh->elements[i].procId);
     }
 
     vtkMesh->GetCellData()->AddArray(procIdArray);

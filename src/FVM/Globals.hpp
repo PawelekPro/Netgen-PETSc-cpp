@@ -9,8 +9,12 @@ enum class FieldIndex : int {
     W = 2, // Velocity - w
     P = 3, // Pressure
     T = 4, // Temperature
-    S = 5 // Indicator function
+    Size = 5
 };
+
+constexpr int ToInt(FieldIndex f) {
+    return static_cast<int>(f);
+}
 
 constexpr int nPhi = 6; // Number of design variables
 

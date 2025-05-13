@@ -47,7 +47,7 @@ namespace FvmMesh {
 
         int physReg = -1;
         // int elemReg = -1;
-        int partition = -1;
+        int procId = -1;
 
         int ghost = 0;
         BndCondType bc = BndCondType::NONE;
@@ -74,7 +74,7 @@ namespace FvmMesh {
 
         int phyReg = -1;
         // int elemReg = -1;
-        int partition = -1;
+        int procId = -1;
 
         // int process = 0;
         BndCondType bc = BndCondType::NONE;
@@ -152,11 +152,11 @@ public:
     int ghostsNb = 0;
     std::vector<int> ghosts;
 
-    bool nodCorrelationAllocated = false;
-    bool eleCorrelationAllocated = false;
+    // bool nodCorrelationAllocated = false;
+    // bool eleCorrelationAllocated = false;
 
-    std::vector<int> nodCorrelation;
-    std::vector<int> eleCorrelation;
+    // std::vector<int> nodCorrelation;
+    // std::vector<int> eleCorrelation;
 };
 
 

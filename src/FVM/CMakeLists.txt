@@ -6,6 +6,8 @@ add_library(Fvm
         BndCond.cpp
         FvmMaterial.cpp
         FvmMeshToVtk.cpp
+        FvmVar.cpp
+        FvmVector.cpp
         ${THIRD_PARTY_DIR}/tinyxml2/tinyxml2.cpp
 )
 

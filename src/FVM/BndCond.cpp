@@ -1,9 +1,16 @@
 #include "BndCond.hpp"
 
+BoundaryConditions::BoundaryConditions() = default;
+
 void BoundaryConditions::RegisterBoundaryCondition(const BcdSurface &bcs) {
-    surfaceRegions.push_back(bcs);
+    _surfaceRegions.push_back(bcs);
 }
 
 void BoundaryConditions::RegisterBoundaryCondition(const BcdVolume &bcs) {
-    volumeRegions.push_back(bcs);
+    _volumeRegions.push_back(bcs);
 };
+
+void BoundaryConditions::Clear() {
+    _surfaceRegions.clear();
+    _volumeRegions.clear();
+}
