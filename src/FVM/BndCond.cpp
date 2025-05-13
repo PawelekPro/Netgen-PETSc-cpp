@@ -14,3 +14,12 @@ void BoundaryConditions::Clear() {
     _surfaceRegions.clear();
     _volumeRegions.clear();
 }
+
+std::vector<BcdSurface> BoundaryConditions::GetSurfaceRegions() const {
+    return _surfaceRegions;
+}
+
+
+std::vector<BcdVolume> BoundaryConditions::GetVolumeRegions() const {
+    return _volumeRegions;
+}

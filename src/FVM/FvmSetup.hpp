@@ -19,6 +19,8 @@ public:
 
     void SetCenters() const;
 
+    void SetInitialConditions() const;
+
 private:
     std::shared_ptr<FvmMeshContainer> _fvmMesh;
     std::shared_ptr<BoundaryConditions> _fvmBndCnd;

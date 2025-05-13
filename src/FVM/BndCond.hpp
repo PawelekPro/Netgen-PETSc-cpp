@@ -37,10 +37,10 @@ struct BcdSurface {
 
     BndCondType bc;
 
-    std::string fu, fv, fw;
-    std::string fp;
-    std::string fT;
-    std::string fs;
+    double fu, fv, fw;
+    double fp;
+    double fT;
+    double fs;
 };
 
 struct BcdVolume : BcdSurface {
@@ -61,9 +61,9 @@ public:
 
     void Clear();
 
-private:
-    std::vector<BcdSurface> _surfaceRegions;
-    std::vector<BcdVolume> _volumeRegions;
+    [[nodiscard]] std::vector<BcdSurface> GetSurfaceRegions() const;
+
+    [[nodiscard]] std::vector<BcdVolume> GetVolumeRegions() const;
 
     BoundaryConditions(const BoundaryConditions &) = delete;
 
@@ -72,6 +72,10 @@ private:
     BoundaryConditions(BoundaryConditions &&) = delete;
 
     BoundaryConditions &operator=(BoundaryConditions &&) = delete;
+
+private:
+    std::vector<BcdSurface> _surfaceRegions;
+    std::vector<BcdVolume> _volumeRegions;
 };
 
 #endif
