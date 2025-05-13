@@ -105,13 +105,13 @@ public:
 
     [[nodiscard]] int GetVolumesRegionsNumber() const;
 
-    std::string GetBoundaryLabel(const int index) const;
+    [[nodiscard]] std::string GetBoundaryLabel(int index) const;
 
-    FvmMesh::Vector3 GetNode(int index) const;
+    [[nodiscard]] FvmMesh::Vector3 GetNode(int index) const;
 
     void SetProcNumber(const int procNb) { _procNumber = procNb; }
-    int GetProcNumber() const { return _procNumber; }
-    bool IsParallel() const { return _procNumber > 1; };
+    [[nodiscard]] int GetProcNumber() const { return _procNumber; }
+    [[nodiscard]] bool IsParallel() const { return _procNumber > 1; };
 
 private:
     void BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject);
