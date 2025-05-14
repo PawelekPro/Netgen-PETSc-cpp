@@ -1,10 +1,18 @@
 #ifndef FVMVARIABLES_HPP
 #define FVMVARIABLES_HPP
 
+#include <memory>
+
 #include "petscksp.h"
+
+class FvmMeshContainer;
 
 class FvmVar {
 public:
+    FvmVar(const std::shared_ptr<FvmMeshContainer> &fvmMesh);
+
+    ~FvmVar();
+
     static Vec cex, cey, cez;
     static Vec cexl, ceyl, cezl;
 
@@ -43,6 +51,9 @@ public:
     static Vec xsm;
     static Vec xsml;
     static Vec xsmf;
+
+private:
+    std::shared_ptr<FvmMeshContainer> _fvmMesh;
 };
 
 

@@ -63,13 +63,6 @@ void FvmSetup::SetCenters() const {
 void FvmSetup::SetInitialConditions() const {
     for (auto element: _fvmMesh->elements) {
         element.bc = BndCondType::NONE;
-
-        FvmVector::V_SetCmp(&FvmVar::xu, element.index, 0.0);
-        FvmVector::V_SetCmp(&FvmVar::xv, element.index, 0.0);
-        FvmVector::V_SetCmp(&FvmVar::xw, element.index, 0.0);
-        FvmVector::V_SetCmp(&FvmVar::xp, element.index, 0.0);
-        FvmVector::V_SetCmp(&FvmVar::xT, element.index, 0.0);
-        FvmVector::V_SetCmp(&FvmVar::xs, element.index, 0.0);
     }
 
     for (const auto bndCnd: _fvmBndCnd->GetVolumeRegions()) {
@@ -119,4 +112,32 @@ void FvmSetup::SetInitialConditions() const {
     VecCopy(FvmVar::xp, FvmVar::xp0);
     VecCopy(FvmVar::xT, FvmVar::xT0);
     VecCopy(FvmVar::xs, FvmVar::xs0);
+}
+
+void FvmSetup::SetInitialFlux() const {
+    VecGhostGetLocalForm(FvmVar::xu, &FvmVar::xul);
+    VecGhostGetLocalForm(FvmVar::xv, &FvmVar::xvl);
+    VecGhostGetLocalForm(FvmVar::xw, &FvmVar::xwl);
+
+    for (const auto face: _fvmMesh->faces) {
+        const int element = face.owner;
+        const int pair = face.pair;
+
+        if (pair != -1) {
+            const int neighbour = _fvmMesh->faces[pair].owner;
+            constexpr double lambda = 0.5;
+            FvmVector::V_SetCmp(
+                &FvmVar::uf, face.index,
+                (FvmVector::V_GetCmp(&FvmVar::xul, neighbour) * lambda +
+                 FvmVector::V_GetCmp(&FvmVar::xul, element) * (1 - lambda)) *
+                face.nVec.x +
+                (FvmVector::V_GetCmp(&FvmVar::xvl, neighbour) * lambda +
+                 FvmVector::V_GetCmp(&FvmVar::xvl, element) * (1 - lambda)) *
+                face.nVec.y +
+                (FvmVector::V_GetCmp(&FvmVar::xwl, neighbour) * lambda +
+                 FvmVector::V_GetCmp(&FvmVar::xwl, element) * (1 - lambda)) *
+                face.nVec.z
+            );
+        }
+    }
 }

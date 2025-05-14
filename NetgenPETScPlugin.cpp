@@ -13,6 +13,7 @@
 #include <petscviewer.h>
 
 
+#include "FvmSetup.hpp"
 #include "Globals.hpp"
 
 
@@ -69,9 +70,9 @@ int main(const int argc, char *argv[]) {
 
 	model.SaveMeshToFile("meshFile.vol");
 
-
+	std::shared_ptr<FvmMeshContainer> fvmMesh;
 	try {
-		auto fvmMesh = std::make_shared<FvmMeshContainer>(mesh);
+		fvmMesh = std::make_shared<FvmMeshContainer>(mesh);
 		auto fvmToVtk = FvmMeshToVtk(fvmMesh);
 		fvmToVtk.ConvertFvmMeshToVtk();
 		fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");
@@ -81,10 +82,16 @@ int main(const int argc, char *argv[]) {
 	}
 
 
-	// const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
-	// auto matReg = MaterialsBase(materialsPath);
-	// matReg.PrintSelf();
+	const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
+	auto matReg = std::make_shared<MaterialsBase>(materialsPath);
+	matReg->PrintSelf();
 
+	auto bndCndBase = std::make_shared<BoundaryConditions>();
+	FvmSetup fvmSetup(fvmMesh, bndCndBase, matReg);
+	fvmSetup.SetCenters();
+	fvmSetup.SetGhosts();
+	fvmSetup.SetInitialConditions();
+	fvmSetup.SetInitialFlux();
 
 	PetscFinalize();
 	return EXIT_SUCCESS;

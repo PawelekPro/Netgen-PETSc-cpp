@@ -21,6 +21,8 @@ public:
 
     void SetInitialConditions() const;
 
+    void SetInitialFlux() const;
+
 private:
     std::shared_ptr<FvmMeshContainer> _fvmMesh;
     std::shared_ptr<BoundaryConditions> _fvmBndCnd;
