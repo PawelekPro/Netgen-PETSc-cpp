@@ -14,6 +14,8 @@
 
 
 #include "FvmSetup.hpp"
+#include "FvmVar.hpp"
+#include "FvmVector.hpp"
 #include "Globals.hpp"
 
 
@@ -87,12 +89,19 @@ int main(const int argc, char *argv[]) {
 	matReg->PrintSelf();
 
 	auto bndCndBase = std::make_shared<BoundaryConditions>();
+
 	FvmSetup fvmSetup(fvmMesh, bndCndBase, matReg);
-	fvmSetup.SetCenters();
 	fvmSetup.SetGhosts();
+
+	FvmVector::Init(fvmMesh);
+
+	auto fvmVariables = FvmVar(fvmMesh);
+
+	fvmSetup.SetCenters();
 	fvmSetup.SetInitialConditions();
 	fvmSetup.SetInitialFlux();
 
+	// FvmVar::Deallocate();
 	PetscFinalize();
 	return EXIT_SUCCESS;
 }

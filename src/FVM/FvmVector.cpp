@@ -2,9 +2,9 @@
 
 FvmVector *FvmVector::_instance = nullptr;
 
-FvmVector::FvmVector(const int ghostsNb, const std::vector<int> &ghostsVec)
-    : _ghostsNb(ghostsNb),
-      _ghostsVec(ghostsVec) {
+FvmVector::FvmVector(const std::shared_ptr<FvmMeshContainer> &fvmMesh)
+    : _ghostsNb(fvmMesh->ghostsNb),
+      _ghostsVec(fvmMesh->ghosts) {
 }
 
 

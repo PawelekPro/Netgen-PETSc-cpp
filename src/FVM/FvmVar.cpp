@@ -2,8 +2,8 @@
 #include "FvmVector.hpp"
 #include "FvmMesh.hpp"
 
-#define DESTROY_VEC(v) VecDestroy(&(v))
-#define DESTROY_MAT(m) MatDestroy(&(m))
+#define DESTROY_MAT(m) if ((m) != nullptr) { MatDestroy(&(m)); (m) = nullptr; }
+#define DESTROY_VEC(v) if ((v) != nullptr) { VecDestroy(&(v)); (v) = nullptr; }
 
 Vec FvmVar::cex;
 Vec FvmVar::cey;
@@ -102,52 +102,52 @@ FvmVar::FvmVar(const std::shared_ptr<FvmMeshContainer> &fvmMesh)
     const int elementsNb = fvmMesh->elementsNb;
     const int facesNb = fvmMesh->facesNb;
 
-    FvmVector::V_Constr(&cex, elementsNb, 0); // Cell centers x-component
-    FvmVector::V_Constr(&cey, elementsNb, 0); // Cell centers y-component
-    FvmVector::V_Constr(&cez, elementsNb, 0); // Cell centers z-component
+    FvmVector::V_Constr(&cex, elementsNb, 0);
+    FvmVector::V_Constr(&cey, elementsNb, 0);
+    FvmVector::V_Constr(&cez, elementsNb, 0);
 
-    FvmVector::V_Constr(&Co, elementsNb, 0); // Courant number
-    FvmVector::V_Constr(&uf, facesNb, 1); // Face flux velocity
+    FvmVector::V_Constr(&Co, elementsNb, 0);
+    FvmVector::V_Constr(&uf, facesNb, 1);
 
-    FvmVector::V_Constr(&dens, elementsNb, 0); // Density
-    FvmVector::V_Constr(&visc, elementsNb, 0); // Dynamic viscosity
-    FvmVector::V_Constr(&thcond, elementsNb, 0); // Thermal conductivity
-    FvmVector::V_Constr(&spheat, elementsNb, 0); // Specific heat
+    FvmVector::V_Constr(&dens, elementsNb, 0);
+    FvmVector::V_Constr(&visc, elementsNb, 0);
+    FvmVector::V_Constr(&thcond, elementsNb, 0);
+    FvmVector::V_Constr(&spheat, elementsNb, 0);
 
-    FvmVector::V_Constr(&xu0, elementsNb, 0); // Velocity x-component at cell center (previous time step)
-    FvmVector::V_Constr(&xv0, elementsNb, 0); // Velocity x-component at cell center (previous time step)
-    FvmVector::V_Constr(&xw0, elementsNb, 0); // Velocity z-component at cell center (previous time step)
-    FvmVector::V_Constr(&xp0, elementsNb, 0); // Pressure at cell center (previous time step)
-    FvmVector::V_Constr(&xT0, elementsNb, 0); // Temperature at cell center (previous time step)
-    FvmVector::V_Constr(&xs0, elementsNb, 0); // Gamma at cell center (previous time step)
+    FvmVector::V_Constr(&xu0, elementsNb, 0);
+    FvmVector::V_Constr(&xv0, elementsNb, 0);
+    FvmVector::V_Constr(&xw0, elementsNb, 0);
+    FvmVector::V_Constr(&xp0, elementsNb, 0);
+    FvmVector::V_Constr(&xT0, elementsNb, 0);
+    FvmVector::V_Constr(&xs0, elementsNb, 0);
 
-    FvmVector::V_Constr(&xu, elementsNb, 0); // Velocity x-component at cell center
-    FvmVector::V_Constr(&xv, elementsNb, 0); // Velocity y-component at cell center (previous time step)
-    FvmVector::V_Constr(&xw, elementsNb, 0); // Velocity z-component at cell center
-    FvmVector::V_Constr(&xp, elementsNb, 0); // Pressure at cell center
-    FvmVector::V_Constr(&xT, elementsNb, 0); // Temperature at cell center
-    FvmVector::V_Constr(&xs, elementsNb, 0); // Gamma at cell center
+    FvmVector::V_Constr(&xu, elementsNb, 0);
+    FvmVector::V_Constr(&xv, elementsNb, 0);
+    FvmVector::V_Constr(&xw, elementsNb, 0);
+    FvmVector::V_Constr(&xp, elementsNb, 0);
+    FvmVector::V_Constr(&xT, elementsNb, 0);
+    FvmVector::V_Constr(&xs, elementsNb, 0);
 
-    FvmVector::V_Constr(&xuf, facesNb, 1); // Velocity x-component at face center
-    FvmVector::V_Constr(&xvf, facesNb, 1); // Velocity x-component at face center
-    FvmVector::V_Constr(&xwf, facesNb, 1); // Velocity z-component at face center
-    FvmVector::V_Constr(&xpf, facesNb, 1); // Pressure at face center
-    FvmVector::V_Constr(&xTf, facesNb, 1); // Temperature at face center
-    FvmVector::V_Constr(&xsf, facesNb, 1); // Gamma at face center
+    FvmVector::V_Constr(&xuf, facesNb, 1);
+    FvmVector::V_Constr(&xvf, facesNb, 1);
+    FvmVector::V_Constr(&xwf, facesNb, 1);
+    FvmVector::V_Constr(&xpf, facesNb, 1);
+    FvmVector::V_Constr(&xTf, facesNb, 1);
+    FvmVector::V_Constr(&xsf, facesNb, 1);
 
-    FvmVector::V_Constr(&ap, elementsNb, 0); // Momentum matrix diagonal
-    FvmVector::V_Constr(&hu, elementsNb, 0); // Momentum matrix source x-component without pressure
-    FvmVector::V_Constr(&hv, elementsNb, 0); // Momentum matrix source y-component without pressure
-    FvmVector::V_Constr(&hw, elementsNb, 0); // Momentum matrix source z-component without pressure
+    FvmVector::V_Constr(&ap, elementsNb, 0);
+    FvmVector::V_Constr(&hu, elementsNb, 0);
+    FvmVector::V_Constr(&hv, elementsNb, 0);
+    FvmVector::V_Constr(&hw, elementsNb, 0);
 
-    FvmVector::V_Constr(&temp1, elementsNb, 0); // Temporary vector 1
-    FvmVector::V_Constr(&temp2, elementsNb, 0); // Temporary vector 2
+    FvmVector::V_Constr(&temp1, elementsNb, 0);
+    FvmVector::V_Constr(&temp2, elementsNb, 0);
 
-    FvmVector::V_Constr(&xsm, elementsNb, 0); // Smoothed gamma at cell center
-    FvmVector::V_Constr(&xsmf, facesNb, 0); // Smoothed gamma  at face center
+    FvmVector::V_Constr(&xsm, elementsNb, 0);
+    FvmVector::V_Constr(&xsmf, facesNb, 0);
 }
 
-FvmVar::~FvmVar() {
+void FvmVar::Deallocate() {
     DESTROY_VEC(cex);
     DESTROY_VEC(cey);
     DESTROY_VEC(cez);

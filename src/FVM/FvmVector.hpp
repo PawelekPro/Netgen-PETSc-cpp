@@ -1,16 +1,20 @@
 #ifndef FVMVECTOR_HPP
 #define FVMVECTOR_HPP
 
+#include "FvmMesh.hpp"
+
 #include <vector>
+#include <memory>
+
 
 #include "petscksp.h"
 
 
 class FvmVector {
 public:
-    static void Init(const int ghostsNb, const std::vector<int> &ghostsVec) {
+    static void Init(const std::shared_ptr<FvmMeshContainer> &fvmMesh) {
         if (!_instance) {
-            _instance = new FvmVector(ghostsNb, ghostsVec);
+            _instance = new FvmVector(fvmMesh);
         }
     }
 
@@ -30,7 +34,7 @@ public:
     static double V_GetCmp(const Vec *v, int ind);
 
 private:
-    FvmVector(const int ghostsNb, const std::vector<int> &ghostsVec);
+    explicit FvmVector(const std::shared_ptr<FvmMeshContainer> &fvmMesh);
 
 private:
     int _ghostsNb = 0;

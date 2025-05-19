@@ -115,6 +115,9 @@ void FvmSetup::SetInitialConditions() const {
 }
 
 void FvmSetup::SetInitialFlux() const {
+    FvmMesh::Element ghost;
+    constexpr double lambda = 0.5;
+
     VecGhostGetLocalForm(FvmVar::xu, &FvmVar::xul);
     VecGhostGetLocalForm(FvmVar::xv, &FvmVar::xvl);
     VecGhostGetLocalForm(FvmVar::xw, &FvmVar::xwl);
@@ -125,7 +128,7 @@ void FvmSetup::SetInitialFlux() const {
 
         if (pair != -1) {
             const int neighbour = _fvmMesh->faces[pair].owner;
-            constexpr double lambda = 0.5;
+
             FvmVector::V_SetCmp(
                 &FvmVar::uf, face.index,
                 (FvmVector::V_GetCmp(&FvmVar::xul, neighbour) * lambda +
@@ -138,6 +141,40 @@ void FvmSetup::SetInitialFlux() const {
                  FvmVector::V_GetCmp(&FvmVar::xwl, element) * (1 - lambda)) *
                 face.nVec.z
             );
+        } else {
+            if (face.bc == BndCondType::PROCESSOR) {
+                ghost.index = face.physReg;
+                ghost.cVec.x = FvmVector::V_GetCmp(&FvmVar::cexl, face.ghost);
+                ghost.cVec.y = FvmVector::V_GetCmp(&FvmVar::ceyl, face.ghost);
+                ghost.cVec.z = FvmVector::V_GetCmp(&FvmVar::cezl, face.ghost);
+
+                FvmVector::V_SetCmp(
+                    &FvmVar::uf, face.index,
+                    (FvmVector::V_GetCmp(&FvmVar::xul, face.ghost) * lambda +
+                     FvmVector::V_GetCmp(&FvmVar::xul, element) * (1 - lambda)) *
+                    face.nVec.x +
+                    (FvmVector::V_GetCmp(&FvmVar::xvl, face.ghost) * lambda +
+                     FvmVector::V_GetCmp(&FvmVar::xvl, element) * (1 - lambda)) *
+                    face.nVec.y +
+                    (FvmVector::V_GetCmp(&FvmVar::xwl, face.ghost) * lambda +
+                     FvmVector::V_GetCmp(&FvmVar::xwl, element) * (1 - lambda)) *
+                    face.nVec.z
+                );
+            } else {
+                FvmVector::V_SetCmp(
+                    &FvmVar::uf, face.index,
+                    FvmVector::V_GetCmp(&FvmVar::xul, element) * face.nVec.x +
+                    FvmVector::V_GetCmp(&FvmVar::xvl, element) * face.nVec.y +
+                    FvmVector::V_GetCmp(&FvmVar::xwl, element) * face.nVec.z
+                );
+            }
         }
     }
+
+    VecGhostRestoreLocalForm(FvmVar::xu, &FvmVar::xul);
+    VecGhostRestoreLocalForm(FvmVar::xv, &FvmVar::xvl);
+    VecGhostRestoreLocalForm(FvmVar::xw, &FvmVar::xwl);
+
+    VecAssemblyBegin(FvmVar::uf);
+    VecAssemblyEnd(FvmVar::uf);
 }
