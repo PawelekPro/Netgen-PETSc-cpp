@@ -98,8 +98,19 @@ int main(const int argc, char *argv[]) {
 	auto fvmVariables = FvmVar(fvmMesh);
 
 	fvmSetup.SetCenters();
+
+	VecGhostGetLocalForm(FvmVar::cex, &FvmVar::cexl);
+	VecGhostGetLocalForm(FvmVar::cey, &FvmVar::ceyl);
+	VecGhostGetLocalForm(FvmVar::cez, &FvmVar::cezl);
+
+	// Set initial conditions
 	fvmSetup.SetInitialConditions();
+
+	// Set initial flux
 	fvmSetup.SetInitialFlux();
+
+	// Set boundary velocity and pressure
+	fvmSetup.SetBoundary();
 
 	// FvmVar::Deallocate();
 	PetscFinalize();

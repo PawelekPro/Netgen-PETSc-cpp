@@ -178,3 +178,50 @@ void FvmSetup::SetInitialFlux() const {
     VecAssemblyBegin(FvmVar::uf);
     VecAssemblyEnd(FvmVar::uf);
 }
+
+void FvmSetup::SetBoundary() const {
+    for (auto face: _fvmMesh->faces) {
+        if (face.pair != -1 && face.bc != BndCondType::PROCESSOR) {
+            face.bc = BndCondType::NONE;
+        }
+
+        FvmVector::V_SetCmp(&FvmVar::xuf, face.index, 0.0);
+        FvmVector::V_SetCmp(&FvmVar::xvf, face.index, 0.0);
+        FvmVector::V_SetCmp(&FvmVar::xwf, face.index, 0.0);
+        FvmVector::V_SetCmp(&FvmVar::xpf, face.index, 0.0);
+        FvmVector::V_SetCmp(&FvmVar::xTf, face.index, 0.0);
+        FvmVector::V_SetCmp(&FvmVar::xsf, face.index, 0.0);
+    }
+
+    for (auto bndCnd: _fvmBndCnd->GetSurfaceRegions()) {
+        for (auto face: _fvmMesh->faces) {
+            if (face.bc == BndCondType::PROCESSOR || face.pair != -1) {
+                continue;
+            }
+
+            if (face.physReg == bndCnd.physReg) {
+                face.bc = bndCnd.bc;
+
+                FvmVector::V_SetCmp(&FvmVar::xuf, face.index, bndCnd.fu);
+                FvmVector::V_SetCmp(&FvmVar::xvf, face.index, bndCnd.fv);
+                FvmVector::V_SetCmp(&FvmVar::xwf, face.index, bndCnd.fw);
+                FvmVector::V_SetCmp(&FvmVar::xpf, face.index, bndCnd.fp);
+                FvmVector::V_SetCmp(&FvmVar::xTf, face.index, bndCnd.fT);
+                FvmVector::V_SetCmp(&FvmVar::xsf, face.index, bndCnd.fs);
+            }
+        }
+    }
+
+    VecAssemblyBegin(FvmVar::xuf);
+    VecAssemblyEnd(FvmVar::xuf);
+    VecAssemblyBegin(FvmVar::xvf);
+    VecAssemblyEnd(FvmVar::xvf);
+    VecAssemblyBegin(FvmVar::xwf);
+    VecAssemblyEnd(FvmVar::xwf);
+    VecAssemblyBegin(FvmVar::xpf);
+    VecAssemblyEnd(FvmVar::xpf);
+    VecAssemblyBegin(FvmVar::xTf);
+    VecAssemblyEnd(FvmVar::xTf);
+    VecAssemblyBegin(FvmVar::xsf);
+    VecAssemblyEnd(FvmVar::xsf);
+}
