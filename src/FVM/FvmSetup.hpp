@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "FvmMaterial.hpp"
+
 class FvmMeshContainer;
 class BoundaryConditions;
 class MaterialsBase;
@@ -24,6 +26,8 @@ public:
     void SetInitialFlux() const;
 
     void SetBoundary() const;
+
+    void SetMaterialProperties(const std::pair<FvmMaterial, FvmMaterial> &materials) const;
 
 private:
     std::shared_ptr<FvmMeshContainer> _fvmMesh;

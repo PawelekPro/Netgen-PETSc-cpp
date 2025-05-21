@@ -3,6 +3,10 @@
 #include "BndCond.hpp"
 #include "FvmVar.hpp"
 #include "FvmVector.hpp"
+#include "Globals.hpp"
+
+#include <utility>
+
 
 FvmSetup::FvmSetup(
     const std::shared_ptr<FvmMeshContainer> &fvmMesh,
@@ -39,7 +43,7 @@ void FvmSetup::SetGhosts() const {
 }
 
 void FvmSetup::SetCenters() const {
-    for (const auto element: _fvmMesh->elements) {
+    for (const auto &element: _fvmMesh->elements) {
         FvmVector::V_SetCmp(&FvmVar::cex, element.index, element.cVec.x);
         FvmVector::V_SetCmp(&FvmVar::cey, element.index, element.cVec.y);
         FvmVector::V_SetCmp(&FvmVar::cez, element.index, element.cVec.z);
@@ -65,7 +69,7 @@ void FvmSetup::SetInitialConditions() const {
         element.bc = BndCondType::NONE;
     }
 
-    for (const auto bndCnd: _fvmBndCnd->GetVolumeRegions()) {
+    for (const auto &bndCnd: _fvmBndCnd->GetVolumeRegions()) {
         for (auto element: _fvmMesh->elements) {
             if (element.phyReg == bndCnd.physReg) {
                 element.bc = bndCnd.bc;
@@ -122,7 +126,7 @@ void FvmSetup::SetInitialFlux() const {
     VecGhostGetLocalForm(FvmVar::xv, &FvmVar::xvl);
     VecGhostGetLocalForm(FvmVar::xw, &FvmVar::xwl);
 
-    for (const auto face: _fvmMesh->faces) {
+    for (const auto &face: _fvmMesh->faces) {
         const int element = face.owner;
         const int pair = face.pair;
 
@@ -193,7 +197,7 @@ void FvmSetup::SetBoundary() const {
         FvmVector::V_SetCmp(&FvmVar::xsf, face.index, 0.0);
     }
 
-    for (auto bndCnd: _fvmBndCnd->GetSurfaceRegions()) {
+    for (const auto &bndCnd: _fvmBndCnd->GetSurfaceRegions()) {
         for (auto face: _fvmMesh->faces) {
             if (face.bc == BndCondType::PROCESSOR || face.pair != -1) {
                 continue;
@@ -224,4 +228,75 @@ void FvmSetup::SetBoundary() const {
     VecAssemblyEnd(FvmVar::xTf);
     VecAssemblyBegin(FvmVar::xsf);
     VecAssemblyEnd(FvmVar::xsf);
+}
+
+void FvmSetup::SetMaterialProperties(
+    const std::pair<FvmMaterial, FvmMaterial> &materials) const {
+    VecGhostGetLocalForm(FvmVar::xu, &FvmVar::xul);
+    VecGhostGetLocalForm(FvmVar::xv, &FvmVar::xvl);
+    VecGhostGetLocalForm(FvmVar::xw, &FvmVar::xwl);
+    VecGhostGetLocalForm(FvmVar::xp, &FvmVar::xpl);
+    VecGhostGetLocalForm(FvmVar::xT, &FvmVar::xTl);
+    VecGhostGetLocalForm(FvmVar::xs, &FvmVar::xsl);
+
+    VecGhostGetLocalForm(FvmVar::xs0, &FvmVar::xs0l);
+
+    double fr[2];
+
+    for (size_t i = 0; i < _fvmMesh->elementsNb; ++i) {
+        fr[1] = LMIN(
+            LMAX(FvmVector::V_GetCmp(&FvmVar::xsl, i) * 0.5 +
+                 FvmVector::V_GetCmp(&FvmVar::xs0l, i) * 0.5, 0.0), 1.0);
+        fr[0] = 1.0 - fr[1];
+
+        FvmVector::V_SetCmp(
+            &FvmVar::dens, _fvmMesh->elements[i].index,
+            materials.first.general.density * fr[0] +
+            materials.second.general.density * fr[1]);
+
+        FvmVector::V_SetCmp(
+            &FvmVar::visc, _fvmMesh->elements[i].index,
+            materials.first.general.viscosity * fr[0] +
+            materials.second.general.viscosity * fr[1]);
+
+        FvmVector::V_SetCmp(
+            &FvmVar::spheat, _fvmMesh->elements[i].index,
+            materials.first.thermal.specificHeat * fr[0] +
+            materials.second.thermal.specificHeat * fr[1]);
+
+        FvmVector::V_SetCmp(
+            &FvmVar::thcond, _fvmMesh->elements[i].index,
+            materials.first.thermal.thermalConductivity * fr[0] +
+            materials.second.thermal.thermalConductivity * fr[1]);
+    }
+
+    VecGhostRestoreLocalForm(FvmVar::xu, &FvmVar::xul);
+    VecGhostRestoreLocalForm(FvmVar::xv, &FvmVar::xvl);
+    VecGhostRestoreLocalForm(FvmVar::xw, &FvmVar::xwl);
+    VecGhostRestoreLocalForm(FvmVar::xp, &FvmVar::xpl);
+    VecGhostRestoreLocalForm(FvmVar::xT, &FvmVar::xTl);
+    VecGhostRestoreLocalForm(FvmVar::xs, &FvmVar::xsl);
+
+    VecGhostRestoreLocalForm(FvmVar::xs0, &FvmVar::xs0l);
+
+    VecAssemblyBegin(FvmVar::dens);
+    VecAssemblyEnd(FvmVar::dens);
+    VecAssemblyBegin(FvmVar::visc);
+    VecAssemblyEnd(FvmVar::visc);
+    VecAssemblyBegin(FvmVar::thcond);
+    VecAssemblyEnd(FvmVar::thcond);
+    VecAssemblyBegin(FvmVar::spheat);
+    VecAssemblyEnd(FvmVar::spheat);
+
+    VecGhostUpdateBegin(FvmVar::dens, INSERT_VALUES, SCATTER_FORWARD);
+    VecGhostUpdateEnd(FvmVar::dens, INSERT_VALUES, SCATTER_FORWARD);
+
+    VecGhostUpdateBegin(FvmVar::visc, INSERT_VALUES, SCATTER_FORWARD);
+    VecGhostUpdateEnd(FvmVar::visc, INSERT_VALUES, SCATTER_FORWARD);
+
+    VecGhostUpdateBegin(FvmVar::spheat, INSERT_VALUES, SCATTER_FORWARD);
+    VecGhostUpdateEnd(FvmVar::spheat, INSERT_VALUES, SCATTER_FORWARD);
+
+    VecGhostUpdateBegin(FvmVar::thcond, INSERT_VALUES, SCATTER_FORWARD);
+    VecGhostUpdateEnd(FvmVar::thcond, INSERT_VALUES, SCATTER_FORWARD);
 }

@@ -112,6 +112,11 @@ int main(const int argc, char *argv[]) {
 	// Set boundary velocity and pressure
 	fvmSetup.SetBoundary();
 
+	FvmMaterial mat1 = matReg->GetMaterial("air");
+	FvmMaterial mat2 = matReg->GetMaterial("air");
+	std::pair materials{mat1, mat2};
+	fvmSetup.SetMaterialProperties(materials);
+
 	// FvmVar::Deallocate();
 	PetscFinalize();
 	return EXIT_SUCCESS;
