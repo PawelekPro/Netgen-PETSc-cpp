@@ -9,7 +9,8 @@ enum class FieldIndex : int {
     W = 2, // Velocity - w
     P = 3, // Pressure
     T = 4, // Temperature
-    Size = 5
+    S = 5,
+    Size = 6
 };
 
 constexpr int ToInt(FieldIndex f) {

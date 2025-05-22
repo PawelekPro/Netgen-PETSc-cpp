@@ -14,26 +14,14 @@
 
 
 #include "FvmSetup.hpp"
+#include "FvmSimulation.hpp"
 #include "FvmVar.hpp"
 #include "FvmVector.hpp"
 #include "Globals.hpp"
+#include "parallel.hpp"
 
 
 int main(const int argc, char *argv[]) {
-	int petscArgc = argc;
-	char **petscArgv = argv;
-	static char help[] =
-			"Three-dimensional unstructured finite-volume implicit flow solver.\n";
-	PetscInitialize(&petscArgc, &petscArgv, nullptr, help);
-
-	PetscPrintf(PETSC_COMM_WORLD, "\n");
-	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
-	PetscPrintf(PETSC_COMM_WORLD, "*                                       *\n");
-	PetscPrintf(PETSC_COMM_WORLD, "*			NetPet-Fvm v1.0			   *\n");
-	PetscPrintf(PETSC_COMM_WORLD, "*                                       *\n");
-	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
-	PetscPrintf(PETSC_COMM_WORLD, "\n");
-
 	argparse::ArgumentParser program(
 		"NetPet-Fvm", "1.0.0 (29.04.2025)");
 	program.add_description(
@@ -55,67 +43,66 @@ int main(const int argc, char *argv[]) {
 
 	const auto stepFile = program.get<std::string>("stepFile");
 
-	Model model;
-	model.ImportSTEP(stepFile);
+	int petscArgc = argc;
+	char **petscArgv = argv;
+	static char help[] =
+			"Three-dimensional unstructured finite-volume implicit flow solver.\n";
 
-	const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
-	meshAlgorithm->maxSize = 2;
-	meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
-	meshAlgorithm->quadAllowed = false;
+	auto fvmSimulation = std::make_unique<FvmSimulation>();
+	fvmSimulation->GenerateMesh(stepFile);
 
-	model.SetMeshAlgorithm(meshAlgorithm);
-	model.GenerateMesh();
+	PetscInitialize(&petscArgc, &petscArgv, nullptr, help);
 
-	// Decomposing mesh to nProc domains
-	auto mesh = model.GetMeshObject();
-	mesh->DecomposeMesh(10);
+	MPI_Comm_size(PETSC_COMM_WORLD, &processorsNb);
+	MPI_Comm_rank(PETSC_COMM_WORLD, &processor);
 
-	model.SaveMeshToFile("meshFile.vol");
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*                                       *\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*			NetPet-Fvm v1.0			   *\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*                                       *\n");
+	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
 
-	std::shared_ptr<FvmMeshContainer> fvmMesh;
-	try {
-		fvmMesh = std::make_shared<FvmMeshContainer>(mesh);
-		auto fvmToVtk = FvmMeshToVtk(fvmMesh);
-		fvmToVtk.ConvertFvmMeshToVtk();
-		fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");
-	} catch (const FvmException &ex) {
-		std::cerr << "Caught MeshException: " << ex.what()
-				<< ", code: " << ex.code() << std::endl;
+	if (fvmSimulation->ConstructGlobalFvmMesh() == LOGICAL_ERROR) {
+		exit(LOGICAL_ERROR);
 	}
 
 
-	const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
-	auto matReg = std::make_shared<MaterialsBase>(materialsPath);
-	matReg->PrintSelf();
-
-	auto bndCndBase = std::make_shared<BoundaryConditions>();
-
-	FvmSetup fvmSetup(fvmMesh, bndCndBase, matReg);
-	fvmSetup.SetGhosts();
-
-	FvmVector::Init(fvmMesh);
-
-	auto fvmVariables = FvmVar(fvmMesh);
-
-	fvmSetup.SetCenters();
-
-	VecGhostGetLocalForm(FvmVar::cex, &FvmVar::cexl);
-	VecGhostGetLocalForm(FvmVar::cey, &FvmVar::ceyl);
-	VecGhostGetLocalForm(FvmVar::cez, &FvmVar::cezl);
-
-	// Set initial conditions
-	fvmSetup.SetInitialConditions();
-
-	// Set initial flux
-	fvmSetup.SetInitialFlux();
-
-	// Set boundary velocity and pressure
-	fvmSetup.SetBoundary();
-
-	FvmMaterial mat1 = matReg->GetMaterial("air");
-	FvmMaterial mat2 = matReg->GetMaterial("air");
-	std::pair materials{mat1, mat2};
-	fvmSetup.SetMaterialProperties(materials);
+	// const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
+	// auto matReg = std::make_shared<MaterialsBase>(materialsPath);
+	// matReg->PrintSelf();
+	//
+	// auto bndCndBase = std::make_shared<BoundaryConditions>();
+	//
+	// FvmSetup fvmSetup(fvmMesh, bndCndBase, matReg);
+	// fvmSetup.SetGhosts();
+	//
+	// FvmVector::Init(fvmMesh);
+	//
+	// auto fvmVariables = FvmVar(fvmMesh);
+	//
+	// fvmSetup.SetCenters();
+	//
+	// VecGhostGetLocalForm(FvmVar::cex, &FvmVar::cexl);
+	// VecGhostGetLocalForm(FvmVar::cey, &FvmVar::ceyl);
+	// VecGhostGetLocalForm(FvmVar::cez, &FvmVar::cezl);
+	//
+	// // Set initial conditions
+	// fvmSetup.SetInitialConditions();
+	//
+	// // Set initial flux
+	// fvmSetup.SetInitialFlux();
+	//
+	// // Set boundary velocity and pressure
+	// fvmSetup.SetBoundary();
+	//
+	// FvmMaterial mat1 = matReg->GetMaterial("air");
+	// FvmMaterial mat2 = matReg->GetMaterial("air");
+	// std::pair materials{mat1, mat2};
+	// fvmSetup.SetMaterialProperties(materials);
+	//
+	// FvmSimulation::Start("./");
 
 	// FvmVar::Deallocate();
 	PetscFinalize();

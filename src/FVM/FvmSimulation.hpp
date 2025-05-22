@@ -3,9 +3,27 @@
 
 #include <string>
 
+#include "Model.hpp"
 
-namespace FvmSimulation {
-    int Start(const std::string &filepath);
+class FvmMeshContainer;
+
+class FvmSimulation {
+public:
+    FvmSimulation();
+
+    ~FvmSimulation() = default;
+
+    void GenerateMesh(const std::string &filepath) const;
+
+    int ConstructGlobalFvmMesh();
+
+    int DistributeMesh();
+
+    static int Start(const std::string &filepath);
+
+private:
+    std::unique_ptr<Model> _model;
+    std::shared_ptr<FvmMeshContainer> _globalFvmMesh;
 };
 
 

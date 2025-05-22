@@ -1,13 +1,56 @@
 #include "FvmSimulation.hpp"
 #include "Globals.hpp"
+#include "FvmParam.hpp"
+#include "Model.hpp"
+#include "MeshAlgorithm.hpp"
+#include "MeshObject.hpp"
+#include "parallel.hpp"
+#include "FvmMeshToVtk.hpp"
+#include "FvmMesh.hpp"
 
 #include <petscsys.h>
 
 #include <array>
-#include <fstream>
 #include <iostream>
 
-using namespace FvmSimulation;
+
+FvmSimulation::FvmSimulation()
+    : _model(std::make_unique<Model>()) {
+}
+
+void FvmSimulation::GenerateMesh(const std::string &filepath) const {
+    _model->ImportSTEP(filepath);
+
+    const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
+    meshAlgorithm->maxSize = 2;
+    meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
+    meshAlgorithm->quadAllowed = false;
+
+    _model->SetMeshAlgorithm(meshAlgorithm);
+    _model->GenerateMesh();
+}
+
+int FvmSimulation::ConstructGlobalFvmMesh() {
+    auto mesh = _model->GetMeshObject();
+
+    if (processorsNb > 1) {
+        mesh->DecomposeMesh(processorsNb);
+    }
+
+    // _model->SaveMeshToFile("meshFile.vol");
+
+    try {
+        _globalFvmMesh = std::make_shared<FvmMeshContainer>(mesh);
+        // auto fvmToVtk = FvmMeshToVtk(_globalFvmMesh);
+        // fvmToVtk.ConvertFvmMeshToVtk();
+        // fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");
+    } catch (const FvmException &ex) {
+        std::cerr << "Caught MeshException: " << ex.what()
+                << ", code: " << ex.code() << std::endl;
+        return LOGICAL_ERROR;
+    }
+    return LOGICAL_TRUE;
+}
 
 int FvmSimulation::Start(const std::string &filepath) {
     constexpr int size = ToInt(FieldIndex::Size);
@@ -19,7 +62,6 @@ int FvmSimulation::Start(const std::string &filepath) {
     int iter = 0;
     int irestart = 0;
 
-    double startTime = 0.0, endTime = 0.0, curTime = 0.0, dt = 0.0;
     double wtime = 0.0, wdt = 0.0;
     double maxCp = 0.0;
 
@@ -29,16 +71,43 @@ int FvmSimulation::Start(const std::string &filepath) {
     const std::string residualsFile = filepath + "/residuals";
     const std::string resultsFile = filepath + "/results";
 
-    std::ofstream fpresults(resultsFile);
-    std::ofstream fpresiduals(residualsFile);
+    FILE *fpresults;
+    FILE *fpresiduals;
 
-    if (!fpresults || !fpresiduals) {
-        std::cerr << "Failed to open one or more simulation files in path: " << filepath << "\n";
+    if (PetscFOpen(PETSC_COMM_WORLD, resultsFile.c_str(), "w", &fpresults) != 0) {
+        std::cerr << "Failed to open results file: " << resultsFile << "\n";
         return LOGICAL_ERROR;
     }
 
-    PetscPrintf(PETSC_COMM_WORLD, "\n");
-    PetscPrintf(PETSC_COMM_WORLD, "Allocating memory...\n");
+    if (fvmParameter.steady == LOGICAL_TRUE) {
+        if (PetscFOpen(PETSC_COMM_WORLD, residualsFile.c_str(), "w", &fpresiduals) != 0) {
+            std::cerr << "Failed to open residuals file: " << residualsFile << "\n";
+            PetscFClose(PETSC_COMM_WORLD, fpresults);
+            return LOGICAL_ERROR;
+        }
+    }
+
+    // PetscPrintf(PETSC_COMM_WORLD, "\n");
+    // PetscPrintf(PETSC_COMM_WORLD, "Allocating memory...\n");
+
+    double startTime, endTime, curTime, dt;
+    startTime = fvmParameter.t0;
+    endTime = fvmParameter.t1;
+    curTime = fvmParameter.t0;
+    dt = fvmParameter.dt;
+
+    // Open the output file for results
+    if (fvmParameter.wbinary == LOGICAL_TRUE) {
+        fpresults = fopen(resultsFile.c_str(), "wb");
+        fprintf(fpresults, "$PostFormat\n");
+        fprintf(fpresults, "%g %d %lu\n", 1.0, 1, sizeof(double));
+        fprintf(fpresults, "$EndPostFormat\n");
+    } else {
+        fpresults = fopen(resultsFile.c_str(), "w");
+        fprintf(fpresults, "$PostFormat\n");
+        fprintf(fpresults, "%g %d %lu\n", 1.0, 0, sizeof(double));
+        fprintf(fpresults, "$EndPostFormat\n");
+    }
 
     return LOGICAL_TRUE;
 }

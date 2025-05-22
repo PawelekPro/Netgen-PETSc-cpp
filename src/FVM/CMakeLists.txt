@@ -6,6 +6,7 @@ add_library(Fvm
         BndCond.cpp
         FvmMaterial.cpp
         FvmMeshToVtk.cpp
+        FvmSimulation.cpp
         FvmVar.cpp
         FvmSetup.cpp
         FvmVector.cpp
@@ -21,6 +22,7 @@ target_link_libraries(Fvm PUBLIC
         ${VTK_LIBRARIES}
         MPI::MPI_CXX
         MeshCore
+        Model
 )
 
 
@@ -31,6 +33,7 @@ target_compile_options(Fvm PUBLIC
 target_include_directories(Fvm PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${PROJECT_DIR}/src/Mesh
+        ${PROJECT_DIR}/src/Model
         ${NETGEN_INCLUDE_DIRS}
         ${PETSC_INCLUDE_DIRS}
 )
