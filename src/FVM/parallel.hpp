@@ -1,4 +1,7 @@
 #pragma once
 
-static int processorsNb;
-static int processor;
+extern int processorsNb;
+extern int processor;
+
+inline int processorsNb = 0;
+inline int processor = 0;

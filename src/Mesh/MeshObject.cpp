@@ -13,7 +13,7 @@ void MeshObject::DecomposeMesh(const int nProc) {
         throw std::runtime_error("Error, number of processors must be greater than 1");
     }
     PetscPrintf(PETSC_COMM_WORLD, "Decomposing domain to %d partitions\n", nProc);
-    NetgenPluginLibWrapper ngLib;
+
     this->ParallelMetis(nProc + 1);
     this->SetProcNumber(nProc);
 }

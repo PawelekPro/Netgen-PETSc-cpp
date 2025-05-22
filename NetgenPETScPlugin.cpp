@@ -48,8 +48,6 @@ int main(const int argc, char *argv[]) {
 	static char help[] =
 			"Three-dimensional unstructured finite-volume implicit flow solver.\n";
 
-	auto fvmSimulation = std::make_unique<FvmSimulation>();
-	fvmSimulation->GenerateMesh(stepFile);
 
 	PetscInitialize(&petscArgc, &petscArgv, nullptr, help);
 
@@ -64,10 +62,13 @@ int main(const int argc, char *argv[]) {
 	PetscPrintf(PETSC_COMM_WORLD, "*****************************************\n");
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
 
+	const auto fvmSimulation = std::make_unique<FvmSimulation>();
+	fvmSimulation->GenerateMesh(stepFile);
+	fvmSimulation->DecomposeMesh();
+
 	if (fvmSimulation->ConstructGlobalFvmMesh() == LOGICAL_ERROR) {
 		exit(LOGICAL_ERROR);
 	}
-
 
 	// const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
 	// auto matReg = std::make_shared<MaterialsBase>(materialsPath);

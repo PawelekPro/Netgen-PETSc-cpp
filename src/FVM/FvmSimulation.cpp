@@ -19,36 +19,58 @@ FvmSimulation::FvmSimulation()
 }
 
 void FvmSimulation::GenerateMesh(const std::string &filepath) const {
-    _model->ImportSTEP(filepath);
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
-    meshAlgorithm->maxSize = 2;
-    meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
-    meshAlgorithm->quadAllowed = false;
+    if (rank == 0) {
+        _model->ImportSTEP(filepath);
 
-    _model->SetMeshAlgorithm(meshAlgorithm);
-    _model->GenerateMesh();
+        const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
+        meshAlgorithm->maxSize = 2;
+        meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
+        meshAlgorithm->quadAllowed = false;
+
+        _model->SetMeshAlgorithm(meshAlgorithm);
+        _model->GenerateMesh();
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+void FvmSimulation::DecomposeMesh() const {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (rank == 0) {
+        if (processorsNb == 1)
+            return;
+
+        _model->GetMeshObject()->DecomposeMesh(processorsNb);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 int FvmSimulation::ConstructGlobalFvmMesh() {
-    auto mesh = _model->GetMeshObject();
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    if (processorsNb > 1) {
-        mesh->DecomposeMesh(processorsNb);
+    if (rank == 0) {
+        auto mesh = _model->GetMeshObject();
+        // _model->SaveMeshToFile("meshFile.vol");
+
+        try {
+            _globalFvmMesh = std::make_shared<FvmMeshContainer>(mesh);
+            // auto fvmToVtk = FvmMeshToVtk(_globalFvmMesh);
+            // fvmToVtk.ConvertFvmMeshToVtk();
+            // fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");
+        } catch (const FvmException &ex) {
+            std::cerr << "Caught MeshException: " << ex.what()
+                    << ", code: " << ex.code() << std::endl;
+            return LOGICAL_ERROR;
+        }
     }
+    MPI_Barrier(MPI_COMM_WORLD);
 
-    // _model->SaveMeshToFile("meshFile.vol");
-
-    try {
-        _globalFvmMesh = std::make_shared<FvmMeshContainer>(mesh);
-        // auto fvmToVtk = FvmMeshToVtk(_globalFvmMesh);
-        // fvmToVtk.ConvertFvmMeshToVtk();
-        // fvmToVtk.SaveVtkMeshToFile("vtkMeshFile.vtm");
-    } catch (const FvmException &ex) {
-        std::cerr << "Caught MeshException: " << ex.what()
-                << ", code: " << ex.code() << std::endl;
-        return LOGICAL_ERROR;
-    }
     return LOGICAL_TRUE;
 }
 
