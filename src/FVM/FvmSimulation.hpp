@@ -17,6 +17,8 @@ public:
 
     int ConstructGlobalFvmMesh();
 
+    void ExportMeshPartitions() const;
+
     void DecomposeMesh() const;
 
     static int Start(const std::string &filepath);

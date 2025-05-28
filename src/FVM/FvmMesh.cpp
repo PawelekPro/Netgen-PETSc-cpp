@@ -1,4 +1,12 @@
 #include "FvmMesh.hpp"
+
+#include <vtkCellData.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkHexahedron.h>
+#include <vtkMultiBlockDataSet.h>
+#include <vtkTetra.h>
+
 #include "GeoCalc.hpp"
 #include "FvmParam.hpp"
 #include "Globals.hpp"
@@ -7,6 +15,29 @@
 
 using namespace FvmMesh;
 using namespace netgen;
+
+void WritePvtuFile(int numPartitions, const std::string &baseName = "mesh") {
+    std::ofstream file(baseName + ".pvtu");
+    if (!file.is_open()) {
+        std::cerr << "Cannot write pvtu file\n";
+        return;
+    }
+
+    file << "<?xml version=\"1.0\"?>\n";
+    file << "<VTKFile type=\"PUnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+    file << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
+    file << "    <PPoints>\n";
+    file << "      <PDataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\"/>\n";
+    file << "    </PPoints>\n";
+
+    for (int i = 0; i < numPartitions; ++i) {
+        file << "    <Piece Source=\"" << baseName << "_" << i << ".vtu\"/>\n";
+    }
+
+    file << "  </PUnstructuredGrid>\n";
+    file << "</VTKFile>\n";
+}
+
 
 ElementType ConvertNetgenElementType(const int ngElemType) {
     switch (ngElemType) {
@@ -494,4 +525,103 @@ FvmMesh::Vector3 FvmMeshContainer::GetNode(const int index) const {
 
 std::string FvmMeshContainer::GetBoundaryLabel(const int index) const {
     return _physicalSurfaceRegions.at(index);
+}
+
+void FvmMeshContainer::ExportMeshToParallelizedVtk() const {
+    std::set<int> procIds;
+    for (const auto &elem: elements)
+        procIds.insert(elem.procId);
+
+    std::vector<vtkSmartPointer<vtkUnstructuredGrid> > partitions;
+    partitions.reserve(procIds.size());
+
+    for (int procId: procIds) {
+        auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+        auto points = vtkSmartPointer<vtkPoints>::New();
+        std::map<int, vtkIdType> globalToLocalNodeId;
+
+        std::vector<const FvmMesh::Element *> elemsForProc;
+        for (const auto &elem: elements)
+            if (elem.procId == procId)
+                elemsForProc.push_back(&elem);
+
+        std::set<int> neededNodes;
+        for (const auto *elem: elemsForProc)
+            for (int n: elem->nodes)
+                neededNodes.insert(n);
+
+        vtkIdType localId = 0;
+        for (int globalId: neededNodes) {
+            const auto &v = nodes[globalId];
+            points->InsertNextPoint(v.x, v.y, v.z);
+            globalToLocalNodeId[globalId] = localId++;
+        }
+
+        grid->SetPoints(points);
+
+        auto procIdArray = vtkSmartPointer<vtkIntArray>::New();
+        procIdArray->SetName("procId");
+        procIdArray->SetNumberOfComponents(1);
+
+        for (const auto *elem: elemsForProc) {
+            vtkSmartPointer<vtkIdList> ids = vtkSmartPointer<vtkIdList>::New();
+            for (int i = 0; i < elem->nodesNb; ++i) {
+                int globalNodeId = elem->nodes[i];
+                auto it = globalToLocalNodeId.find(globalNodeId);
+                if (it == globalToLocalNodeId.end()) {
+                    std::cerr << "Error: node not found in local map\n";
+                    continue;
+                }
+                ids->InsertNextId(it->second);
+            }
+
+            switch (elem->type) {
+                case FvmMesh::ElementType::TETRAHEDRON:
+                    if (ids->GetNumberOfIds() == 4)
+                        grid->InsertNextCell(VTK_TETRA, ids);
+                    break;
+                case FvmMesh::ElementType::HEXAHEDRON:
+                    if (ids->GetNumberOfIds() == 8)
+                        grid->InsertNextCell(VTK_HEXAHEDRON, ids);
+                    break;
+                case FvmMesh::ElementType::PRISM:
+                    if (ids->GetNumberOfIds() == 6)
+                        grid->InsertNextCell(VTK_WEDGE, ids);
+                    break;
+                case FvmMesh::ElementType::TRIANGLE:
+                    if (ids->GetNumberOfIds() == 3)
+                        grid->InsertNextCell(VTK_TRIANGLE, ids);
+                    break;
+                case FvmMesh::ElementType::QUADRANGLE:
+                    if (ids->GetNumberOfIds() == 4)
+                        grid->InsertNextCell(VTK_QUAD, ids);
+                    break;
+                case FvmMesh::ElementType::BEAM:
+                    if (ids->GetNumberOfIds() == 2)
+                        grid->InsertNextCell(VTK_LINE, ids);
+                    break;
+                default:
+                    std::cerr << "Warning: unknown element type\n";
+                    break;
+            }
+
+            procIdArray->InsertNextValue(procId);
+        }
+
+        grid->GetCellData()->AddArray(procIdArray);
+        partitions.push_back(grid);
+    }
+
+    int procIndex = 0;
+    for (const auto &partition: partitions) {
+        std::string fileName = "mesh_" + std::to_string(procIndex) + ".vtu";
+        auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        writer->SetFileName(fileName.c_str());
+        writer->SetInputData(partition);
+        writer->SetDataModeToAscii(); // or SetDataModeToBinary() for compact files
+        writer->Write();
+        procIndex++;
+    }
+
+    WritePvtuFile(static_cast<int>(partitions.size()));
 }

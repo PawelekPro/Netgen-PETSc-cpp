@@ -113,6 +113,8 @@ public:
     [[nodiscard]] int GetProcNumber() const { return _procNumber; }
     [[nodiscard]] bool IsParallel() const { return _procNumber > 1; };
 
+    void ExportMeshToParallelizedVtk() const;
+
 private:
     void BuildFvmMesh(const std::shared_ptr<MeshObject> &meshObject);
 

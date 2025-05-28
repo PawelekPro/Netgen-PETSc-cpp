@@ -70,6 +70,8 @@ int main(const int argc, char *argv[]) {
 		exit(LOGICAL_ERROR);
 	}
 
+	fvmSimulation->ExportMeshPartitions();
+
 	// const std::string materialsPath = std::string(ASSETS_DIR) + "/materials.xml";
 	// auto matReg = std::make_shared<MaterialsBase>(materialsPath);
 	// matReg->PrintSelf();

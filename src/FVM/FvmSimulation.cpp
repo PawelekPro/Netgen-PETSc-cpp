@@ -50,6 +50,17 @@ void FvmSimulation::DecomposeMesh() const {
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
+void FvmSimulation::ExportMeshPartitions() const {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (rank == 0) {
+        _globalFvmMesh->ExportMeshToParallelizedVtk();
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
 int FvmSimulation::ConstructGlobalFvmMesh() {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
