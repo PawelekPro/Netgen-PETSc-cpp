@@ -106,24 +106,23 @@ else ()
 endif ()
 
 add_subdirectory(src)
+add_subdirectory(applications)
 add_subdirectory(examples)
 
-include_directories(
-        ${THIRD_PARTY_DIR}
-        ${PROJECT_DIR}/src/Geometry
-        ${PROJECT_DIR}/src/Mesh
-        ${PROJECT_DIR}/src/Model
-        ${PROJECT_DIR}/src/NetgenToDMPlex
-        ${PROJECT_DIR}/src/FVM
-)
-
-
-add_executable(NetgenPETScPlugin NetgenPETScPlugin.cpp)
-target_compile_options(NetgenPETScPlugin PRIVATE ${PETSC_CFLAGS_OTHER})
-target_link_libraries(NetgenPETScPlugin PRIVATE
-        GeometryCore
-        MeshCore
-        Model
-        NetgenToDMPlex
-        Fvm
-)
+#include_directories(
+#        ${THIRD_PARTY_DIR}
+#        ${PROJECT_DIR}/src/Geometry
+#        ${PROJECT_DIR}/src/Mesh
+#        ${PROJECT_DIR}/src/Model
+#        ${PROJECT_DIR}/src/FVM
+#)
+#
+#
+#add_executable(NetgenPETScPlugin NetgenPETScPlugin.cpp)
+#target_compile_options(NetgenPETScPlugin PRIVATE ${PETSC_CFLAGS_OTHER})
+#target_link_libraries(NetgenPETScPlugin PRIVATE
+#        GeometryCore
+#        MeshCore
+#        Model
+#        Fvm
+#)
