@@ -12,11 +12,16 @@ add_library(MeshCore
 if (WIN32)
     target_link_libraries(MeshCore PUBLIC
             ${OpenCASCADE_LIBRARIES}
-            ${NETGEN_LIBRARIES})
+            ${NETGEN_LIBRARIES}
+            ${VTK_LIBRARIES}
+    )
 else ()
     target_link_libraries(MeshCore PUBLIC
             ${OCC_LIBRARIES}
-            ${NETGEN_LIBRARIES})
+            ${NETGEN_LIBRARIES}
+            ${VTK_LIBRARIES}
+    )
+
 endif ()
 
 include_directories(${NETGEN_INCLUDE_DIRS})

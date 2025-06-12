@@ -3,7 +3,8 @@ add_library(Globals
 )
 
 include_directories(
-        ${THIRD_PARTY_DIR})
+        ${THIRD_PARTY_DIR}
+)
 
 target_link_libraries(Globals PUBLIC
         ${PETSC_LINK_LIBRARIES}

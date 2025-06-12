@@ -51,6 +51,8 @@ public:
     void SetProcNumber(const int procNb) { _procNumber = procNb; }
     int GetProcNumber() const { return _procNumber; }
 
+    void WritePartitionedVtk(const std::string &filename) const;
+
 private:
     int _procNumber = 1;
 

@@ -1,23 +1,47 @@
 #include "Application.hpp"
+#include "MeshAlgorithm.hpp"
+#include "Model.hpp"
 
 #include <petscsys.h>
+#include <petscviewer.h>
 
-static std::string appName = "meshGen";
-static std::string version = "1.0.0 (09.06.2025)";
-static std::string description = "Mesh generator - NETGEN plugin";
-static std::string author = "Author: Paweł Gilewicz";
+#include "MeshObject.hpp"
 
-int main(int argc, char* argv[]) {
-	Application app(appName, version, description, author);
+static std::string description = "Mesh generator - NETGEN plugin\nAuthor: Paweł Gilewicz\n";
 
-	if (!app.parse(argc, argv))
-		return EXIT_FAILURE;
+int main(int argc, char *argv[]) {
+	char stepFileName[PETSC_MAX_PATH_LEN] = "";
+	int procNumber = 1;
+	PetscBool stepFileFound, procFound, helpRequested = PETSC_FALSE;
 
 	PetscInitialize(&argc, &argv, nullptr, description.c_str());
+	PetscOptionsHasName(nullptr, nullptr, "-help", &helpRequested);
+	if (helpRequested) {
+		PetscOptionsView(nullptr, PETSC_VIEWER_STDOUT_WORLD);
+		PetscFinalize();
+		return EXIT_SUCCESS;
+	}
 
-	int processor, processorsNb;
-	MPI_Comm_size(PETSC_COMM_WORLD, &processorsNb);
-	MPI_Comm_rank(PETSC_COMM_WORLD, &processor);
+	PetscOptionsGetString(nullptr, nullptr, "-stepfile", stepFileName, sizeof(stepFileName), &stepFileFound);
+	PetscOptionsGetInt(nullptr, nullptr, "-procnumber", &procNumber, &procFound);
+	Application::PrintBanner("OpenFVM++ v2512");
 
-	app.printBanner("NetPet-Fvm v1.0");
+	const auto model = std::make_unique<Model>();
+	model->ImportSTEP(std::string(stepFileName));
+
+	const auto meshAlgorithm = std::make_shared<MeshAlgorithm>();
+
+	// ToDo: set algorithm properties (probably through an XML file)
+	meshAlgorithm->SetDim(MeshAlgorithm::ALG_3D);
+	meshAlgorithm->quadAllowed = false;
+	meshAlgorithm->maxSize = 2;
+
+	model->SetMeshAlgorithm(meshAlgorithm);
+	model->GenerateMesh();
+
+	model->GetMeshObject()->DecomposeMesh(procNumber);
+	model->GetMeshObject()->WritePartitionedVtk("blabla");
+
+	PetscFinalize();
+	return EXIT_SUCCESS;
 }
