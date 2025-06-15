@@ -9,56 +9,56 @@
 #include <meshing.hpp>
 #include <occgeom.hpp>
 
+#include <vtkSmartPointer.h>
+
 namespace netgen {
-    NETGENPLUGIN_DLL_HEADER
-    extern MeshingParameters mparam;
+NETGENPLUGIN_DLL_HEADER
+extern MeshingParameters mparam;
 }
 
+class vtkPartitionedDataSet;
 
 class MeshObject : public netgen::Mesh {
 public:
-    MeshObject();
-
-    ~MeshObject() = default;
+	MeshObject();
+	~MeshObject() = default;
 
 public:
-    void DecomposeMesh(int nProc);
+	void DecomposeMesh(int nProc);
 
-    void SetPhysicalSurfaceRegionLabel(int index, const std::string &label);
+	void SetPhysicalSurfaceRegionLabel(int index, const std::string& label);
+	std::string GetPhysicalSurfaceRegionLabel(int index) const;
+	void SetPhysicalVolumeRegionLabel(int index, const std::string& label);
+	std::string GetPhysicalVolumeRegionLabel(int index) const;
 
-    std::string GetPhysicalSurfaceRegionLabel(int index) const;
+	int GetSurfaceRegionsNumber() const {
+		return static_cast<int>(_physicalSurfaceRegions.size());
+	}
 
-    void SetPhysicalVolumeRegionLabel(int index, const std::string &label);
+	int GetVolumeRegionsNumber() const {
+		return static_cast<int>(_physicalVolumeRegions.size());
+	}
 
-    std::string GetPhysicalVolumeRegionLabel(int index) const;
+	std::map<int, std::string> GetSurfaceRegions() {
+		return _physicalSurfaceRegions;
+	}
+	std::map<int, std::string> GetVolumeRegions() {
+		return _physicalVolumeRegions;
+	}
 
-    int GetSurfaceRegionsNumber() const {
-        return static_cast<int>(_physicalSurfaceRegions.size());
-    }
+	void SetProcNumber(const int procNb) { _procNumber = procNb; }
+	int GetProcNumber() const { return _procNumber; }
 
-    int GetVolumeRegionsNumber() const {
-        return static_cast<int>(_physicalVolumeRegions.size());
-    }
+	void SaveDecomposedVtk(const std::string& cwd = "") const;
 
-    std::map<int, std::string> GetSurfaceRegions() {
-        return _physicalSurfaceRegions;
-    }
-
-    std::map<int, std::string> GetVolumeRegions() {
-        return _physicalVolumeRegions;
-    }
-
-    void SetProcNumber(const int procNb) { _procNumber = procNb; }
-    int GetProcNumber() const { return _procNumber; }
-
-    void SaveDecomposedVtk(const std::string &cwd = "") const;
+	static vtkSmartPointer<vtkPartitionedDataSet> GenerateGhostCells(
+		const vtkSmartPointer<vtkPartitionedDataSet>& dataset);
 
 private:
-    int _procNumber = 1;
+	int _procNumber = 1;
 
-    std::map<int, std::string> _physicalSurfaceRegions;
-    std::map<int, std::string> _physicalVolumeRegions;
+	std::map<int, std::string> _physicalSurfaceRegions;
+	std::map<int, std::string> _physicalVolumeRegions;
 };
-
 
 #endif

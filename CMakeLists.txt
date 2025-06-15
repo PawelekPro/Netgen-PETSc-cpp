@@ -90,11 +90,14 @@ endif ()
 find_package(VTK QUIET REQUIRED COMPONENTS
         vtkIOCore
         vtkCommonCore
+        vtkCommonDataModel
+        vtkParallelCore
         vtkIOGeometry
         vtkIOLegacy
         vtkIOXML
+        vtkIOParallelXML
+        vtkFiltersParallelDIY2
 )
-
 
 if (NOT VTK_FOUND)
     MESSAGE(FATAL_ERROR "vtk_example: Unable to find the VTK build folder.")
@@ -108,21 +111,3 @@ endif ()
 add_subdirectory(src)
 add_subdirectory(applications)
 add_subdirectory(examples)
-
-#include_directories(
-#        ${THIRD_PARTY_DIR}
-#        ${PROJECT_DIR}/src/Geometry
-#        ${PROJECT_DIR}/src/Mesh
-#        ${PROJECT_DIR}/src/Model
-#        ${PROJECT_DIR}/src/FVM
-#)
-#
-#
-#add_executable(NetgenPETScPlugin NetgenPETScPlugin.cpp)
-#target_compile_options(NetgenPETScPlugin PRIVATE ${PETSC_CFLAGS_OTHER})
-#target_link_libraries(NetgenPETScPlugin PRIVATE
-#        GeometryCore
-#        MeshCore
-#        Model
-#        Fvm
-#)

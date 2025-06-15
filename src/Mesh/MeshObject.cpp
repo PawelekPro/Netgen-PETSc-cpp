@@ -3,6 +3,8 @@
 #include "petscksp.h"
 
 #include <vtkCellData.h>
+#include <vtkGhostCellsGenerator.h>
+#include <vtkPartitionedDataSet.h>
 #include <vtkPoints.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
@@ -55,6 +57,7 @@ std::string MeshObject::GetPhysicalVolumeRegionLabel(const int index) const {
 //----------------------------------------------------------------------------
 void MeshObject::SaveDecomposedVtk(const std::string& cwd) const {
 	MeshWriter writer;
+	std::vector<vtkSmartPointer<vtkUnstructuredGrid>> partitions;
 	for (int index = 0; index < _procNumber; ++index) {
 		const auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 		vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -131,7 +134,6 @@ void MeshObject::SaveDecomposedVtk(const std::string& cwd) const {
 			}
 		}
 
-		// Create and fill ProcId array
 		auto procIdArray = vtkSmartPointer<vtkIntArray>::New();
 		procIdArray->SetName("ProcId");
 		procIdArray->SetNumberOfComponents(1);
@@ -144,17 +146,41 @@ void MeshObject::SaveDecomposedVtk(const std::string& cwd) const {
 		// Attach array to cell data
 		grid->GetCellData()->AddArray(procIdArray);
 		grid->GetCellData()->SetScalars(procIdArray);
+		std::cout << "Partition: " << index << grid->GetNumberOfPoints()
+				  << " points, " << grid->GetNumberOfCells() << " elements"
+				  << std::endl;
 
-		std::string fileName = "meshPart_" + std::to_string(index) + ".vtu";
-		fs::path filePath
-			= cwd.empty() ? fs::path(fileName) : fs::path(cwd) / fileName;
-
-		writer.SetInputData(grid);
-		writer.WriteVtuFile(filePath);
-		std::cout << "Writing partition " << index << ": "
-				  << points->GetNumberOfPoints() << " points, "
-				  << grid->GetNumberOfCells() << " elements" << std::endl;
+		partitions.push_back(grid);
 	}
 
-	MeshWriter::WritePvtuFile(cwd, "meshPart", _procNumber);
+	const auto partitionedData = vtkSmartPointer<vtkPartitionedDataSet>::New();
+	partitionedData->SetNumberOfPartitions(partitions.size());
+
+	for (size_t i = 0; i < partitions.size(); ++i) {
+		partitionedData->SetPartition(i, partitions[i]);
+	}
+
+	const std::string fileName = "mesh.vtpd";
+	fs::path filePath
+		= cwd.empty() ? fs::path(fileName) : fs::path(cwd) / fileName;
+
+	const auto dataset = this->GenerateGhostCells(partitionedData);
+
+	if (!output || dataset->GetNumberOfPartitions() == 0) {
+		std::cerr << "Ghost cell generation failed: empty output" << std::endl;
+	}
+
+	writer.SetInputData(dataset);
+	writer.WriteVtpdFile(fileName);
+}
+
+//----------------------------------------------------------------------------
+vtkSmartPointer<vtkPartitionedDataSet> MeshObject::GenerateGhostCells(
+	const vtkSmartPointer<vtkPartitionedDataSet>& dataset) {
+	const vtkNew<vtkGhostCellsGenerator> generator;
+	generator->SetInputData(dataset);
+	generator->SetNumberOfGhostLayers(1);
+	generator->Update();
+
+	return vtkPartitionedDataSet::SafeDownCast(generator->GetOutput());
 }
