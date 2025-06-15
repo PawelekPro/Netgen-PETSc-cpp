@@ -6,6 +6,7 @@ add_library(MeshCore
         MeshGenerator.cpp
         MeshAlgorithm.cpp
         MeshObject.cpp
+        MeshWriter.cpp
         MeshInfo.cpp
 )
 
@@ -24,7 +25,10 @@ else ()
 
 endif ()
 
-include_directories(${NETGEN_INCLUDE_DIRS})
+include_directories(
+        ${NETGEN_INCLUDE_DIRS}
+        ${PROJECT_DIR}/src/Globals
+)
 
 target_compile_definitions(
         MeshCore PUBLIC

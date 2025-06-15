@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 	model->GenerateMesh();
 
 	model->GetMeshObject()->DecomposeMesh(procNumber);
-	model->GetMeshObject()->WritePartitionedVtk();
+	model->GetMeshObject()->SaveDecomposedVtk();
 
 	PetscFinalize();
 	return EXIT_SUCCESS;
