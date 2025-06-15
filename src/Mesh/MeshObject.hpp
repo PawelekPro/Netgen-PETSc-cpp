@@ -51,7 +51,12 @@ public:
     void SetProcNumber(const int procNb) { _procNumber = procNb; }
     int GetProcNumber() const { return _procNumber; }
 
-    void WritePartitionedVtk(const std::string &filename) const;
+    void WritePartitionedVtk(const std::string &cwd = "") const;
+
+private:
+    void WritePvtuFile(
+        const std::string &cwd = "",
+        const std::string &fileName = "meshPart") const;
 
 private:
     int _procNumber = 1;

@@ -2,12 +2,16 @@
 
 #include "petscksp.h"
 
+#include <vtkCellData.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkPoints.h>
 #include <vtkXMLUnstructuredGridWriter.h>
 
+#include <filesystem>
+
 using namespace netgen;
+namespace fs = std::filesystem;
 
 //----------------------------------------------------------------------------
 MeshObject::MeshObject() {
@@ -51,27 +55,36 @@ void MeshObject::WritePartitionedVtk(const std::string &cwd) const {
     for (int index = 0; index < _procNumber; ++index) {
         const auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
         vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-
         std::map<int, vtkIdType> pointMap;
-        const int np = this->GetNP();
-        for (int i = 0; i < np; ++i) {
-            const Point3d &p = this->Point(i + 1);
-            const vtkIdType pid = points->InsertNextPoint(p.X(), p.Y(), p.Z());
-            pointMap[i] = pid;
+
+        const int ne = GetNE();
+        for (int i = 0; i < ne; ++i) {
+            const Element &el = VolumeElement(i + 1);
+
+            if (vol_partition[i] != index + 1)
+                continue;
+
+            for (int j = +1; j < el.GetNP(); ++j) {
+                const int pNum = el.PNum(j);
+                if (!pointMap.contains(pNum)) {
+                    const Point3d &p = this->Point(pNum);
+                    const vtkIdType pid = points->InsertNextPoint(p.X(), p.Y(), p.Z());
+                    pointMap[pNum] = pid;
+                }
+            }
         }
 
         grid->SetPoints(points);
 
-        const int ne = GetNE();
-        for (int i = 1; i < ne; ++i) {
-            const Element &el = VolumeElement(i);
+        for (int i = 0; i < ne; ++i) {
+            const Element &el = VolumeElement(i + 1);
 
-            if (vol_partition[i] != index)
+            if (vol_partition[i] != index + 1)
                 continue;
 
-            const vtkSmartPointer<vtkIdList> ids = vtkSmartPointer<vtkIdList>::New();
+            auto ids = vtkSmartPointer<vtkIdList>::New();
             for (int j = 0; j < el.GetNP(); ++j)
-                ids->InsertNextId(pointMap[el.PNum(j)]);
+                ids->InsertNextId(pointMap[el.PNum(j + 1)]);
 
             switch (el.GetType()) {
                 case TET:
@@ -114,11 +127,65 @@ void MeshObject::WritePartitionedVtk(const std::string &cwd) const {
             }
         }
 
-        std::string fileName = "mesh_" + std::to_string(index) + ".vtu";
+        // Create and fill ProcId array
+        auto procIdArray = vtkSmartPointer<vtkIntArray>::New();
+        procIdArray->SetName("ProcId");
+        procIdArray->SetNumberOfComponents(1);
+        procIdArray->SetNumberOfTuples(grid->GetNumberOfCells());
+
+        for (vtkIdType cid = 0; cid < grid->GetNumberOfCells(); ++cid) {
+            procIdArray->SetValue(cid, index);
+        }
+
+        // Attach array to cell data
+        grid->GetCellData()->AddArray(procIdArray);
+        // Set it as active scalars so ParaView uses it by default
+        grid->GetCellData()->SetScalars(procIdArray);
+
+        std::string fileName = "meshPart_" + std::to_string(index) + ".vtu";
+        fs::path filePath = cwd.empty() ? fs::path(fileName) : fs::path(cwd) / fileName;
         const auto writer = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-        writer->SetFileName(fileName.c_str());
+        writer->SetFileName(filePath.c_str());
         writer->SetInputData(grid);
         writer->SetDataModeToAscii();
         writer->Write();
+
+        std::cout << "Writing partition " << index << ": "
+                << points->GetNumberOfPoints() << " points, "
+                << grid->GetNumberOfCells() << " elements" << std::endl;
     }
+
+    WritePvtuFile(cwd);
+}
+
+void MeshObject::WritePvtuFile(const std::string &cwd, const std::string &fileName) const {
+    fs::path pvtuFile = cwd.empty() ? fs::path("mesh") : fs::path(cwd) / "mesh";
+    pvtuFile.replace_extension(".pvtu");
+
+    std::ofstream file(pvtuFile);
+    if (!file.is_open()) {
+        std::cerr << "Cannot write pvtu file at " << pvtuFile << std::endl;
+        return;
+    }
+
+    file << "<?xml version=\"1.0\"?>\n";
+    file << "<VTKFile type=\"PUnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+    file << "  <PUnstructuredGrid GhostLevel=\"0\">\n";
+
+    file << "    <PCellData Scalars=\"ProcId\">\n";
+    file << "      <PDataArray type=\"Int32\" Name=\"ProcId\" format=\"ascii\"/>\n";
+    file << "    </PCellData>\n";
+
+    file << "    <PPoints>\n";
+    file << "      <PDataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\"/>\n";
+    file << "    </PPoints>\n";
+
+    for (int i = 0; i < _procNumber + 0; ++i) {
+        file << "    <Piece Source=\"" << fileName << "_" << i << ".vtu\"/>\n";
+    }
+
+    file << "  </PUnstructuredGrid>\n";
+    file << "</VTKFile>\n";
+
+    std::cout << "Writing parallel VTK file: " << pvtuFile << std::endl;
 }
