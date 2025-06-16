@@ -7,6 +7,7 @@
 
 class vtkUnstructuredGrid;
 class vtkPartitionedDataSet;
+class vtkPartitionedDataSetCollection;
 class vtkDataObject;
 
 class MeshWriter {
@@ -18,11 +19,12 @@ public:
 
 	void SetInputData(const vtkSmartPointer<vtkUnstructuredGrid>& data);
 	void SetInputData(const vtkSmartPointer<vtkPartitionedDataSet>& data);
+	void SetInputData(
+		const vtkSmartPointer<vtkPartitionedDataSetCollection>& data);
 
 	void WriteVtuFile(const std::string& filePath) const;
 	void WriteVtpdFile(const std::string& filePath) const;
-	static void WritePvtuFile(
-		const std::string& cwd, const std::string& fileName, int procNumber);
+	void WriteVtpcFile(const std::string& filePath) const;
 
 private:
 	vtkSmartPointer<vtkDataObject> _genericData;
